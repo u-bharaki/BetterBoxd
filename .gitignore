@@ -1,0 +1,18 @@
+# API Keys
+api_keys.txt
+
+# Databases
+*.db
+*.db-journal*
+*.sqlite
+*.sqlite3
+databases/
+
+# Logs
+*.log
+logs/
+
+# Raw Datas
+*.xlsx
+*.csv
+raw_excels/
