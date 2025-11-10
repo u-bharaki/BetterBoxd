@@ -1,19 +1,34 @@
 from datetime import datetime
+from pathlib import Path
+
+
 import requests
 import pandas as pd
 import sqlite3
 import time
 import sys
 
-from matplotlib.pyplot import title
-from numpy.ma.core import nomask
-from sympy.physics.units import length
-
 API_KEYS_FILE = "api_keys.txt"
+SAVE_FILE = "save"
+LAST_SAVE_FILE = ""
+NEW_SAVE_FILE = ""
+LOG_FILE = ""
+EXCEL_FILE = ""
+NEW_EXCEL_FILE = ""
+DB_FILE = ""
+NEW_DB_FILE = ""
 DBTABLE_NAME = "movies"
-APPROX_FILM_COUNT = 30000
+
+APPROX_FILM_COUNT = 20
+TOTAL_QUERY_COUNT = 0
 current_key_index = 0
+START_TERM_INDEX = 0
+TERM_INDEX = 0
+PAGE_INDEX = 1
+ITEM_INDEX = 0
 api_keys = []
+
+is_api_keys_finished = False
 
 def get_time_str():
     return datetime.now().strftime("%d-%m-%Y__%H-%M-%S")
@@ -21,16 +36,26 @@ def get_time_str():
 def load_api_keys():
     """api_keys.txt içindeki anahtarları listeye yükler."""
     global api_keys
-    with open(API_KEYS_FILE, "r") as f:
-        api_keys = [line.strip() for line in f.readlines() if line.strip()]
+
+    try:
+        with open(API_KEYS_FILE, "r") as f:
+            api_keys = [line.strip() for line in f.readlines() if line.strip()]
+    except FileNotFoundError:
+        print("HATA: API KEYS FILE NOT FOUND")
+        exit(1)
+    except Exception as e:
+        print(f"{API_KEYS_FILE}: {e}")
+        exit(1)
     if not api_keys:
-        raise ValueError("api_keys.txt dosyasında hiç API anahtarı yok.")
+        print(f"{API_KEYS_FILE} dosyasında hiç API anahtarı yok.")
 
 def get_current_api_key():
     """Şu anda kullanılan API anahtarını döndürür."""
     global current_key_index
     if current_key_index >= len(api_keys):
-        raise ValueError("[WARNING] Tüm API anahtarları kullanıldı.")
+        print("[WARNING] Tüm API anahtarları kullanıldı.")
+        global is_api_keys_finished
+        is_api_keys_finished = True
     return api_keys[current_key_index]
 
 def mark_key_as_used(key):
@@ -60,6 +85,76 @@ def renew_api_key():
     print(f"\n[INFO] API key yenilendi. Yeni anahtar: {api_keys[current_key_index]}")
     return True
 
+def load_last_session():
+    global SAVE_FILE, LAST_SAVE_FILE, NEW_SAVE_FILE
+    i = 1
+    SAVE_FILES = []
+    while(Path(f"{SAVE_FILE}{i}.txt").is_file()):
+        SAVE_FILES.append(Path(f"{SAVE_FILE}{i}.txt"))
+        i += 1
+    if not SAVE_FILES:
+        print(f"[INFO] {SAVE_FILE}{i} do not exists")
+        print(f"[INFO] Creating {SAVE_FILE}{i}.txt\n")
+        LAST_SAVE_FILE = SAVE_FILE+str(i)+".txt"
+        return False
+    save_file_name = SAVE_FILES[len(SAVE_FILES) - 1].name
+    j = 0
+    for x in range(0, len(save_file_name)):
+        if '0' <= save_file_name[x] <= '9':
+            j = x
+            break
+
+    LAST_SAVE_FILE = save_file_name[0:j] + str(i-1) + ".txt"
+    NEW_SAVE_FILE = save_file_name[0:j] + str(i) + ".txt"
+
+    with open(LAST_SAVE_FILE, "r") as f:
+        data = [line.strip() for line in f.readlines() if line.strip()]
+    if not data:
+        print(f"{LAST_SAVE_FILE} is empty")
+        return False
+    elif len(data) == 8:
+        global DB_FILE, EXCEL_FILE, LOG_FILE, TOTAL_QUERY_COUNT, current_key_index, START_TERM_INDEX, PAGE_INDEX, ITEM_INDEX
+
+        DB_FILE = data[0]
+        EXCEL_FILE = data[1]
+        LOG_FILE = data[2]
+
+        try:
+            TOTAL_QUERY_COUNT = int(data[3])
+            current_key_index = int(data[4])
+            START_TERM_INDEX = int(data[5])
+            PAGE_INDEX = int(data[6])
+            ITEM_INDEX = int(data[7])
+        except ValueError:
+            print(f"[ERROR] {LAST_SAVE_FILE}: {data[3]}, {data[4]}, {data[5]}, {data[6]} and/or {data[7]} are invalid (try int)")
+            return False
+        return True
+    else:
+        print(f"[ERROR] {LAST_SAVE_FILE} is not in appropriate format:\ndatabase_folder.db(str)\nexcel_folder.excel(str)\nTotal_Query_Count(int)\nCurrent_Key_Index(int)")
+        return False
+
+def save_session():
+    global NEW_SAVE_FILE, NEW_DB_FILE, NEW_EXCEL_FILE, LOG_FILE, TOTAL_QUERY_COUNT, current_key_index, TERM_INDEX
+    if NEW_SAVE_FILE != "":
+        file = NEW_SAVE_FILE
+    else:
+        file = LAST_SAVE_FILE
+    if NEW_DB_FILE:
+        db_file = NEW_DB_FILE
+    else:
+        db_file = DB_FILE
+
+    with open(file, "w") as f:
+        f.write(f"{db_file}\n")
+        f.write(f"{NEW_EXCEL_FILE}\n")
+        f.write(f"{LOG_FILE}\n")
+        f.write(f"{TOTAL_QUERY_COUNT}\n")
+        f.write(f"{current_key_index}\n")
+        f.write(f"{TERM_INDEX}\n")
+        f.write(f"{PAGE_INDEX}\n")
+        f.write(f"{ITEM_INDEX}\n")
+    print(f"Session successfully saved to '{file}'.")
+
 class DualLogger:
     def __init__(self, filename):
         self.terminal = sys.stdout
@@ -74,11 +169,14 @@ class DualLogger:
         self.log.flush()
 
 def get_films(approx_film_count, conn, cursor):
-
-    sys.stdout = DualLogger(f"logs/log_{get_time_str()}.txt")
+    # If not exists, create database folder
+    Path("logs").mkdir(parents=True, exist_ok=True)
+    # Create log file
+    global LOG_FILE, TERM_INDEX, PAGE_INDEX, TOTAL_QUERY_COUNT
+    LOG_FILE = f"logs/{get_time_str()}.log"
+    sys.stdout = DualLogger(LOG_FILE)
 
     load_api_keys()
-    BASE_URL = "http://www.omdbapi.com/?i=tt3896198&apikey=efdd0d9b"
 
     all_data = []
 
@@ -86,21 +184,25 @@ def get_films(approx_film_count, conn, cursor):
     search_terms = [chr(i) for i in range(97, 99)]  # a-z
     search_terms += [chr(i) + chr(j) for i in range(97, 123) for j in range(97, 123)]
     search_terms = [chr(i) + chr(j) + chr(k) for i in range(97, 123) for j in range(97, 123) for k in range(97, 123)]
-    x = 0
-    for term in search_terms:
+    query_count = 0
+    for TERM_INDEX in range(START_TERM_INDEX, len(search_terms)):
+        term = search_terms[TERM_INDEX]
         print(f"\n[INFO] '{term}' ARANIYOR...-----------------------------------------------------------")
-        page = 1
-        while x < approx_film_count:
-            x += 1
-            params = {"s": term, "page": page}
+        if query_count != 0:
+            PAGE_INDEX = 1
+        while query_count < approx_film_count:
+            query_count += 1
+            params = {"s": term, "page": PAGE_INDEX}
             BASE_URL = get_current_api_key()
+            if is_api_keys_finished:
+                transfer_to_excel(all_data)
             response = requests.get(BASE_URL, params=params)
             try:
                 data = response.json()
             except:
                 print("[ERROR] 1 -----------------------------------------")
                 continue
-            print(f"[INFO - LIST] {x} - TERM '{term}' - PAGE '{page}' - {data}")
+            print(f"[INFO - LIST] {query_count} - TERM '{term}' - PAGE '{PAGE_INDEX}' - {data}")
 
             if data.get("Error") == "Request limit reached!":
                 print(f"[WARNING] Limit doldu -> {BASE_URL}")
@@ -108,24 +210,30 @@ def get_films(approx_film_count, conn, cursor):
                 if success:
                     continue  # Yeni anahtarla tekrar dene
                 else:
+                    save_session()
                     transfer_to_excel(all_data)
 
             if data.get("Response") == "True":
 
                 n = 0
-                for item in data.get("Search", []):
+                global ITEM_INDEX
+                for item_index in range(0, len(data.get("Search", []))):
+                    ITEM_INDEX = item_index
+                    item = data.get("Search", [])[item_index]
                     title = item.get("Title")
 
                     BASE_URL = get_current_api_key()
+                    if is_api_keys_finished:
+                        transfer_to_excel(all_data)
                     # Detaylı veri çek (Title, Year, Director, vs.)
                     detail_resp = requests.get(BASE_URL, params={"t": title})
-                    x += 1
+                    query_count += 1
                     try:
                         details = detail_resp.json()
                     except:
                         print("[ERROR] 2 -----------------------------------------")
                         continue
-                    print(f"[INFO - FILM] {x} - {details}")
+                    print(f"[INFO - FILM] {query_count} - {details}")
 
                     if details.get("Error") == "Request limit reached!":
                         print(f"[WARNING] Limit doldu -> {BASE_URL}")
@@ -140,22 +248,27 @@ def get_films(approx_film_count, conn, cursor):
                         all_data.append(details)
                         n += 1
                 if n >= 10:
-                    page += 1
+                    PAGE_INDEX += 1
                 else:
                     break
             else:
                 print("[WARNING] Başarısız!")
+                TERM_INDEX -= 1
                 break
             time.sleep(0.2)  # rate limit'e yakalanmamak için
-        if x >= approx_film_count:
+        if query_count >= approx_film_count:
+            TOTAL_QUERY_COUNT += query_count
             break
-
     transfer_to_excel(all_data)
 
 def transfer_to_excel(all_data):
     df = pd.DataFrame(all_data)
-    df.to_excel(f"omdb_full_dataset_{get_time_str()}.xlsx", index=False)
-    print(f"✅ Tüm veriler 'omdb_full_dataset_{get_time_str()}.xlsx' dosyasına kaydedildi.")
+    global NEW_EXCEL_FILE
+    NEW_EXCEL_FILE = f"raw_excels/omdb_full_dataset_{get_time_str()}.xlsx"
+    df.to_excel(NEW_EXCEL_FILE, index=False)
+    print(f"✅ Tüm veriler '{NEW_EXCEL_FILE}' dosyasına kaydedildi.")
+    save_session()
+    exit(0)
 
 def get_film_debug(api_key, film_title):
     detail_resp = requests.get(api_key, params={"t": film_title})
@@ -166,7 +279,15 @@ def get_film_debug(api_key, film_title):
         print("[ERROR] 2 -----------------------------------------")
 
 def connect_sqlite():
-    conn = sqlite3.connect(f"databases/{DBTABLE_NAME}_{get_time_str()}.db")
+    Path("databases").mkdir(parents=True, exist_ok=True)
+    global DB_FILE, NEW_DB_FILE
+    if not DB_FILE:
+        print(f"Database file does not exist. Creating databases/{DBTABLE_NAME}_{get_time_str()}.db")
+        NEW_DB_FILE = f"databases/{DBTABLE_NAME}_{get_time_str()}.db"
+        conn = sqlite3.connect(NEW_DB_FILE)
+    else:
+        print(f"Database file exists. Using databases/{DBTABLE_NAME}_{get_time_str()}.db")
+        conn = sqlite3.connect(DB_FILE)
     cursor = conn.cursor()
     return conn, cursor
 
@@ -292,6 +413,8 @@ def insert_to_sql(data, conn, cursor):
         """, (data.get("Title"), Country, Language, Poster, totalSeasons, start_year, end_year, wins, nominations, imdbRating, imdbVotes, Plot, Rated, runtime, Type))
 
     conn.commit()
+
+load_last_session()
 
 conn, cursor = connect_sqlite()
 create_table(cursor)
