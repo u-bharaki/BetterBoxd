@@ -16,3 +16,9 @@ logs/
 *.xlsx
 *.csv
 raw_excels/
+
+# Save Files
+save[0-9]*.txt
+
+# IDE Config
+.idea/

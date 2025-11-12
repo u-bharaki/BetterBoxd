@@ -17,9 +17,20 @@ EXCEL_FILE = ""
 NEW_EXCEL_FILE = ""
 DB_FILE = ""
 NEW_DB_FILE = ""
-DBTABLE_NAME = "movies"
 
-APPROX_FILM_COUNT = 115_000
+# Database name (.db)
+DB_NAME = "movies"
+
+# Table names in database
+PRODUCTIONS_TABLE_NAME = "productions"
+CONTRIBUTORS_TABLE_NAME = "contributors"
+USERS_TABLE_NAME = "users"
+FOLLOWS_TABLE_NAME = "follows"
+LISTS_TABLE_NAME = "lists"
+PRODUCTIONS_IN_LISTS_TABLE_NAME = "productions_in_lists"
+REVIEWS_TABLE_NAME = "reviews"
+
+APPROX_FILM_COUNT = 20
 TOTAL_QUERY_COUNT = 0
 current_key_index = 0
 START_TERM_INDEX = 0
@@ -285,18 +296,18 @@ def connect_sqlite():
     Path("databases").mkdir(parents=True, exist_ok=True)
     global DB_FILE, NEW_DB_FILE
     if not DB_FILE:
-        print(f"Database file does not exist. Creating databases/{DBTABLE_NAME}_{get_time_str()}.db")
-        NEW_DB_FILE = f"databases/{DBTABLE_NAME}_{get_time_str()}.db"
+        print(f"Database file does not exist. Creating databases/{DB_NAME}_{get_time_str()}.db")
+        NEW_DB_FILE = f"databases/{DB_NAME}_{get_time_str()}.db"
         conn = sqlite3.connect(NEW_DB_FILE)
     else:
-        print(f"Database file exists. Using databases/{DBTABLE_NAME}_{get_time_str()}.db")
+        print(f"Database file exists. Using databases/{DB_FILE}.db")
         conn = sqlite3.connect(DB_FILE)
     cursor = conn.cursor()
     return conn, cursor
 
-def create_table(cursor):
+def create_tables(cursor):
     cursor.execute(f"""
-    CREATE TABLE IF NOT EXISTS {DBTABLE_NAME} (
+    CREATE TABLE IF NOT EXISTS {PRODUCTIONS_TABLE_NAME} (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         title TEXT NOT NULL,
         country TEXT,
@@ -314,6 +325,77 @@ def create_table(cursor):
         runtime INTEGER,
         type TEXT CHECK(type IN ('movie', 'series')),
         added_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+    )
+    """)
+
+    cursor.execute(f"""
+    CREATE TABLE IF NOT EXISTS {CONTRIBUTORS_TABLE_NAME} (
+        production_id INTEGER NOT NULL,
+        first_name TEXT NOT NULL,
+        last_name TEXT NOT NULL,
+        role TEXT CHECK(role IN ('director', 'writer', 'actor')),
+        
+        CONSTRAINT fk_{CONTRIBUTORS_TABLE_NAME}_production_id FOREIGN KEY (production_id) REFERENCES {PRODUCTIONS_TABLE_NAME}(id)
+    )
+    """)
+
+    cursor.execute(f"""
+    CREATE TABLE IF NOT EXISTS {USERS_TABLE_NAME} (
+        id INTEGER PRIMARY KEY,
+        username TEXT NOT NULL,
+        password TEXT NOT NULL,
+        email TEXT NOT NULL,
+        first_name TEXT NOT NULL,
+        last_name TEXT NOT NULL,
+        created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+    )
+    """)
+
+    cursor.execute(f"""
+    CREATE TABLE IF NOT EXISTS {FOLLOWS_TABLE_NAME} (
+        follower_user_id INTEGER NOT NULL,
+        followed_user_id INTEGER NOT NULL,
+        followed_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        
+        CONSTRAINT fk_follower_user_id FOREIGN KEY (follower_user_id) REFERENCES {USERS_TABLE_NAME}(id) ON DELETE CASCADE,
+        CONSTRAINT fk_followed_user_id FOREIGN KEY (followed_user_id) REFERENCES {USERS_TABLE_NAME}(id) ON DELETE CASCADE    
+    )
+    """)
+
+    cursor.execute(f"""
+    CREATE TABLE IF NOT EXISTS {LISTS_TABLE_NAME} (
+        id INTEGER PRIMARY KEY,
+        name TEXT NOT NULL,
+        user_id INTEGER NOT NULL,
+        production_count INTEGER NOT NULL,
+        
+        CONSTRAINT fk_{LISTS_TABLE_NAME}_user_id FOREIGN KEY (user_id) REFERENCES {USERS_TABLE_NAME}(id) ON DELETE CASCADE
+    )
+    """)
+
+    cursor.execute(f"""
+    CREATE TABLE IF NOT EXISTS {PRODUCTIONS_IN_LISTS_TABLE_NAME} (
+        production_id INTEGER NOT NULL,
+        list_id INTEGER NOT NULL,
+        user_id INTEGER NOT NULL,
+        
+        CONSTRAINT fk_{PRODUCTIONS_IN_LISTS_TABLE_NAME}_production_id FOREIGN KEY (production_id) REFERENCES {PRODUCTIONS_TABLE_NAME}(id) ON DELETE CASCADE,
+        CONSTRAINT fk_{PRODUCTIONS_IN_LISTS_TABLE_NAME}_list_id FOREIGN KEY (list_id) REFERENCES {LISTS_TABLE_NAME}(id) ON DELETE CASCADE,
+        CONSTRAINT fk_{PRODUCTIONS_IN_LISTS_TABLE_NAME}_user_id FOREIGN KEY (user_id) REFERENCES {USERS_TABLE_NAME}(id) ON DELETE CASCADE
+        
+    )
+    """)
+
+    cursor.execute(f"""
+    CREATE TABLE IF NOT EXISTS {REVIEWS_TABLE_NAME} (
+        id INTEGER PRIMARY KEY,
+        context TEXT NOT NULL,
+        score REAL NOT NULL,
+        production_id INTEGER NOT NULL,
+        user_id INTEGER NOT NULL,
+        
+        CONSTRAINT fk_{REVIEWS_TABLE_NAME}_production_id FOREIGN KEY (production_id) REFERENCES {PRODUCTIONS_TABLE_NAME}(id) ON DELETE CASCADE,
+        CONSTRAINT fk_{REVIEWS_TABLE_NAME}_user_id FOREIGN KEY (user_id) REFERENCES {USERS_TABLE_NAME}(id) ON DELETE CASCADE
     )
     """)
 
@@ -396,7 +478,7 @@ def insert_to_sql(data, conn, cursor):
         Type = data.get("Type")
 
     cursor.execute(f"""
-    INSERT INTO {DBTABLE_NAME} (
+    INSERT INTO {PRODUCTIONS_TABLE_NAME} (
         title,
         country,
         language,
@@ -420,6 +502,6 @@ def insert_to_sql(data, conn, cursor):
 load_last_session()
 
 conn, cursor = connect_sqlite()
-create_table(cursor)
+create_tables(cursor)
 
 get_films(APPROX_FILM_COUNT, conn, cursor)
