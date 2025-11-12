@@ -19,7 +19,7 @@ DB_FILE = ""
 NEW_DB_FILE = ""
 DBTABLE_NAME = "movies"
 
-APPROX_FILM_COUNT = 20
+APPROX_FILM_COUNT = 115_000
 TOTAL_QUERY_COUNT = 0
 current_key_index = 0
 START_TERM_INDEX = 0
@@ -169,6 +169,7 @@ class DualLogger:
         self.log.flush()
 
 def get_films(approx_film_count, conn, cursor):
+
     # If not exists, create database folder
     Path("logs").mkdir(parents=True, exist_ok=True)
     # Create log file
@@ -262,6 +263,8 @@ def get_films(approx_film_count, conn, cursor):
     transfer_to_excel(all_data)
 
 def transfer_to_excel(all_data):
+    Path("raw_excels").mkdir(parents=True, exist_ok=True)
+    conn.commit()
     df = pd.DataFrame(all_data)
     global NEW_EXCEL_FILE
     NEW_EXCEL_FILE = f"raw_excels/omdb_full_dataset_{get_time_str()}.xlsx"
@@ -276,7 +279,7 @@ def get_film_debug(api_key, film_title):
         details = detail_resp.json()
         print(f"[INFO - FILM] {details}")
     except:
-        print("[ERROR] 2 -----------------------------------------")
+        print("[ERROR] 3 -----------------------------------------")
 
 def connect_sqlite():
     Path("databases").mkdir(parents=True, exist_ok=True)
