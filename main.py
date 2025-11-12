@@ -30,7 +30,7 @@ LISTS_TABLE_NAME = "lists"
 PRODUCTIONS_IN_LISTS_TABLE_NAME = "productions_in_lists"
 REVIEWS_TABLE_NAME = "reviews"
 
-APPROX_FILM_COUNT = 20
+APPROX_FILM_COUNT = 200
 TOTAL_QUERY_COUNT = 0
 current_key_index = 0
 START_TERM_INDEX = 0
@@ -40,6 +40,10 @@ ITEM_INDEX = 0
 api_keys = []
 
 is_api_keys_finished = False
+
+ROLE_ACTOR = "actor"
+ROLE_DIRECTOR = "director"
+ROLE_WRITER = "writer"
 
 def get_time_str():
     return datetime.now().strftime("%d-%m-%Y__%H-%M-%S")
@@ -496,6 +500,76 @@ def insert_to_sql(data, conn, cursor):
         type)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """, (data.get("Title"), Country, Language, Poster, totalSeasons, start_year, end_year, wins, nominations, imdbRating, imdbVotes, Plot, Rated, runtime, Type))
+
+    production_id = cursor.lastrowid
+    directors = data.get("Director")
+    if directors:
+        directors_splitted = directors.split(",")
+        for director in directors_splitted:
+            director = director.strip()
+            if director is None or director == "N/A":
+                continue
+            words = director.split(" ")
+            surname = words[-1].title()
+            if len(words) != 1:
+                name = " ".join(words[:-1]).title()
+            else:
+                name = surname
+
+            cursor.execute(f"""
+            INSERT INTO {CONTRIBUTORS_TABLE_NAME} (
+                production_id,
+                first_name,
+                last_name,
+                role)
+            VALUES (?, ?, ?, ?)
+            """, (production_id, name, surname, ROLE_DIRECTOR))
+
+    writers = data.get("Writer")
+    if writers:
+        writers_splitted = writers.split(",")
+        for writer in writers_splitted:
+            writer = writer.strip()
+            if writer is None or writer == "N/A":
+                continue
+            words = writer.split(" ")
+            surname = words[-1].title()
+            if len(words) != 1:
+                name = " ".join(words[:-1]).title()
+            else:
+                name = surname
+
+            cursor.execute(f"""
+            INSERT INTO {CONTRIBUTORS_TABLE_NAME} (
+                production_id,
+                first_name,
+                last_name,
+                role)
+            VALUES (?, ?, ?, ?)
+            """, (production_id, name, surname, ROLE_WRITER))
+
+    actors = data.get("Actors")
+    if actors:
+        actors_splitted = actors.split(",")
+        for actor in actors_splitted:
+            actor = actor.strip()
+            if actor is None or actor == "N/A":
+                continue
+            words = actor.split(" ")
+            surname = words[-1].title()
+            if len(words) != 1:
+                name = " ".join(words[:-1]).title()
+            else:
+                name = surname
+
+            cursor.execute(f"""
+            INSERT INTO {CONTRIBUTORS_TABLE_NAME} (
+                production_id,
+                first_name,
+                last_name,
+                role)
+            VALUES (?, ?, ?, ?)
+            """, (production_id, name, surname, ROLE_ACTOR))
 
     conn.commit()
 
