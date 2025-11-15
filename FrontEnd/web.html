@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BetterBoxd | İnteraktif Arayüz</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Chosen Palette: Warm Neutrals with Amber Accent -->
+    <!-- Application Structure Plan: Tek Sayfa Uygulaması (SPA) modeli. Global bir navigasyon (header) sabit kalır. Ana içerik alanı ('app-content'), JS fonksiyonları (renderUserProfile, renderProductionDetail) aracılığıyla dinamik olarak yeniden çizilir. Navigasyon, sayfa yenilemesi olmadan JS olayları ile yönetilir. Bu yapı, raporun çok-sayfalı sitemap'ini modern, akıcı ve tek sayfalık bir web uygulaması deneyimine dönüştürmek için seçilmiştir. Kullanıcı, profil, yapım detayları ve ayarlar arasında kesintisiz geçiş yapabilir. -->
+    <!-- Visualization & Content Choices: Rapor: Profil İstatistikleri -> Hedef: Kullanıcı aktivitesinin görsel özeti -> Sunum: HTML/Tailwind ile kilit istatistik kartları + Chart.js (Kullanıcı Puan Dağılımı için Yatay Çubuk, Tür Dağılımı için Donut). Etkileşim: Grafik araç ipuçları. Gerekçe: Basit rakamların ötesinde derinlemesine, keşfedilebilir bir özet sunar. Rapor: Yapım Detay Sayfası / Puanlama -> Hedef: Topluluk puanını ve bireysel eylemleri gösterme -> Sunum: Etkileşimli HTML/Unicode yıldızları ve butonları + Topluluk Puan Dağılımı için Chart.js Çubuk Grafik. Etkileşim: Butonlara tıklama modal'ı tetikler (openReviewModal), yıldızlar hover/click ile değişir. Gerekçe: Zengin puanlama bağlamı ve raporun gerektirdiği ana CTA eylem akışını sağlar. Rapor: Hızlı İnceleme Modalı -> Hedef: İnceleme kaydı -> Sunum: Gizli HTML/Tailwind modal formu. Etkileşim: JS ile görünürlük (open/close). Gerekçe: Sayfadan ayrılmadan eylem gerçekleştirme. -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8f7f3;
+            color: #1a1a1a;
+        }
+        :root {
+            --color-accent: #FFC107;
+            --color-accent-dark: #e0a800;
+        }
+        .bg-accent { background-color: var(--color-accent); }
+        .text-accent { color: var(--color-accent); }
+        .border-accent { border-color: var(--color-accent); }
+        .hover\:bg-accent-dark:hover { background-color: var(--color-accent-dark); }
+        .hover\:text-accent-dark:hover { color: var(--color-accent-dark); }
+
+        .backdrop-blur-image {
+            background-size: cover;
+            background-position: center;
+        }
+        .backdrop-blur-image::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-color: rgba(248, 247, 243, 0.85);
+            backdrop-filter: blur(16px) grayscale(50%);
+            -webkit-backdrop-filter: blur(16px) grayscale(50%);
+        }
+        .tab-active {
+            border-bottom-color: var(--color-accent);
+            color: #1a1a1a;
+            font-weight: 600;
+        }
+        .tab-inactive {
+            color: #6b7280;
+        }
+        .action-button {
+            @apply flex flex-col items-center justify-center text-gray-600 hover:text-accent-dark transition-colors duration-200;
+        }
+        .action-button-icon {
+            @apply w-10 h-10 flex items-center justify-center bg-gray-200 rounded-full;
+        }
+        .action-button-icon-active {
+            @apply bg-accent text-black;
+        }
+        .action-button-text {
+            @apply text-xs font-medium mt-1;
+        }
+        .rating-stars span {
+            cursor: pointer;
+            transition: color 0.2s;
+        }
+        .modal-content {
+            background-color: #f8f7f3;
+        }
+    </style>
+</head>
+<body class="antialiased">
+
+    <header class="sticky top-0 z-40 w-full bg-white shadow-sm border-b border-gray-200">
+        <div class="container mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+            <div class="flex h-16 items-center justify-between">
+                <div class="flex items-center">
+                    <span class="text-2xl font-bold text-gray-900">BetterBoxd</span>
+                    <nav class="hidden md:flex items-baseline space-x-6 ml-10">
+                        <a href="#" data-nav="feed" class="text-gray-700 hover:text-accent-dark px-3 py-2 text-sm font-medium">Akış</a>
+                        <a href="#" data-nav="lists" class="text-gray-700 hover:text-accent-dark px-3 py-2 text-sm font-medium">Listelerim</a>
+                    </nav>
+                </div>
+                <div class="flex-1 max-w-xs mx-4">
+                    <input type="text" placeholder="Arama yap... (Inception...)" class="w-full px-4 py-2 text-sm border border-gray-300 rounded-full bg-gray-50 focus:outline-none focus:ring-2 focus:ring-accent">
+                </div>
+                <div class="flex items-center space-x-4">
+                    <button id="open-review-modal-global" class="flex items-center justify-center w-10 h-10 sm:w-auto sm:px-4 sm:py-2 bg-accent text-black rounded-full text-sm font-semibold hover:bg-accent-dark transition-colors">
+                        <span class="text-xl sm:hidden">+</span>
+                        <span class="hidden sm:inline">+ İncele / Log</span>
+                    </button>
+                    <div class="relative">
+                        <button data-nav="profile" class="w-10 h-10 rounded-full overflow-hidden border-2 border-gray-300">
+                            <img src="https://placehold.co/100x100/f0f0f0/333?text=A" alt="Profil Resmi" class="w-full h-full object-cover">
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main id="app-content" class="container mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8">
+    </main>
+
+    <div id="review-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-75 hidden">
+        <div class="modal-content w-full max-w-lg p-6 rounded-lg shadow-xl m-4">
+            <div class="flex items-center justify-between pb-3 border-b border-gray-300">
+                <div>
+                    <h3 class="text-lg font-semibold" id="modal-production-title">Yapımı İncele</h3>
+                    <p class="text-sm text-gray-600" id="modal-production-year"></p>
+                </div>
+                <button id="close-review-modal" class="w-8 h-8 flex items-center justify-center text-gray-500 hover:text-gray-800 rounded-full hover:bg-gray-200">
+                    <span class="text-2xl">&times;</span>
+                </button>
+            </div>
+            <div class="mt-4">
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Bu yapımı ne zaman izledin?</label>
+                    <input type="date" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-accent" value="">
+                </div>
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Puanın</label>
+                    <div class="flex space-x-1 text-4xl text-gray-300" id="modal-rating-stars">
+                        <span data-rating="1" class="hover:text-accent">★</span>
+                        <span data-rating="2" class="hover:text-accent">★</span>
+                        <span data-rating="3" class="hover:text-accent">★</span>
+                        <span data-rating="4" class="hover:text-accent">★</span>
+                        <span data-rating="5" class="hover:text-accent">★</span>
+                    </div>
+                </div>
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">İncelemen / Notların</label>
+                    <textarea class="w-full h-32 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-accent" placeholder="Düşüncelerin..."></textarea>
+                </div>
+                <div class="flex items-center justify-between">
+                    <label class="flex items-center text-sm">
+                        <input type="checkbox" class="h-4 w-4 rounded border-gray-300 text-accent focus:ring-accent">
+                        <span class="ml-2 text-gray-700">Spoiler içeriyor?</span>
+                    </label>
+                    <button class="px-6 py-2 bg-accent text-black font-semibold rounded-full hover:bg-accent-dark transition-colors">
+                        Kaydet
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const mockData = {
+            user: {
+                username: "@ahmet",
+                avatar: "https://placehold.co/100x100/f0f0f0/333?text=A",
+                stats: {
+                    total: 1204,
+                    thisYear: 150,
+                    lists: 12,
+                    reviews: 80
+                },
+                ratings: [5, 12, 45, 102, 80],
+                genres: [
+                    { label: 'Bilim Kurgu', count: 45 },
+                    { label: 'Dram', count: 30 },
+                    { label: 'Komedi', count: 20 },
+                    { label: 'Aksiyon', count: 10 },
+                    { label: 'Diğer', count: 5 }
+                ],
+                recentReviews: [
+                    { id: 'inception', title: 'Inception', poster: 'https://placehold.co/200x300/e0e0e0/555?text=Inception' },
+                    { id: 'interstellar', title: 'Interstellar', poster: 'https://placehold.co/200x300/e0e0e0/555?text=Interstellar' },
+                    { id: 'dune', title: 'Dune', poster: 'https://placehold.co/200x300/e0e0e0/555?text=Dune' },
+                    { id: 'parasite', title: 'Parasite', poster: 'https://placehold.co/200x300/e0e0e0/555?text=Parasite' }
+                ]
+            },
+            productions: {
+                inception: {
+                    title: 'Inception',
+                    year: '2010',
+                    director: 'Christopher Nolan',
+                    avgRating: 4.8,
+                    poster: 'https://placehold.co/400x600/e0e0e0/555?text=Inception',
+                    backdrop: 'https://placehold.co/1400x788/ccc/777?text=Inception+Backdrop',
+                    plot: 'Bilinçaltının derinliklerine inen bir hırsızın hikayesi. Rüyalar içinde rüyalar...',
+                    cast: [
+                        { name: 'Leonardo DiCaprio', photo: 'https://placehold.co/100x100/f0f0f0/333?text=LD' },
+                        { name: 'Joseph Gordon-Levitt', photo: 'https://placehold.co/100x100/f0f0f0/333?text=JGL' },
+                        { name: 'Elliot Page', photo: 'https://placehold.co/100x100/f0f0f0/333?text=EP' }
+                    ],
+                    crew: [
+                        { name: 'Christopher Nolan', role: 'Yönetmen' },
+                        { name: 'Christopher Nolan', role: 'Yazar' }
+                    ],
+                    details: {
+                        country: 'USA, UK',
+                        language: 'English',
+                        runtime: '148 dk',
+                        type: 'Film'
+                    },
+                    communityRatings: [20, 45, 150, 450, 800]
+                }
+            }
+        };
+
+        const appContent = document.getElementById('app-content');
+        const modal = document.getElementById('review-modal');
+        let chartInstances = {};
+
+        function destroyCharts() {
+            Object.values(chartInstances).forEach(chart => {
+                if (chart) chart.destroy();
+            });
+            chartInstances = {};
+        }
+
+        function wrapLabel(str, maxwidth) {
+            const sections = [];
+            let words = str.split(" ");
+            let temp = "";
+            words.forEach((item, index) => {
+                if (temp.length > 0 && temp.length + item.length > maxwidth) {
+                    sections.push(temp);
+                    temp = "";
+                }
+                temp += (temp.length == 0 ? "" : " ") + item;
+            });
+            sections.push(temp);
+            return sections;
+        }
+
+        function renderUserProfile() {
+            destroyCharts();
+            const user = mockData.user;
+            const statsHTML = `
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+                    <div class="bg-white p-4 rounded-lg shadow-sm border border-gray-200 text-center">
+                        <div class="text-3xl font-bold text-gray-900">${user.stats.total}</div>
+                        <div class="text-sm text-gray-600">Toplam İzlenen</div>
+                    </div>
+                    <div class="bg-white p-4 rounded-lg shadow-sm border border-gray-200 text-center">
+                        <div class="text-3xl font-bold text-gray-900">${user.stats.thisYear}</div>
+                        <div class="text-sm text-gray-600">Bu Yıl</div>
+                    </div>
+                    <div class="bg-white p-4 rounded-lg shadow-sm border border-gray-200 text-center">
+                        <div class="text-3xl font-bold text-gray-900">${user.stats.lists}</div>
+                        <div class="text-sm text-gray-600">Toplam Liste</div>
+                    </div>
+                    <div class="bg-white p-4 rounded-lg shadow-sm border border-gray-200 text-center">
+                        <div class="text-3xl font-bold text-gray-900">${user.stats.reviews}</div>
+                        <div class="text-sm text-gray-600">Toplam İnceleme</div>
+                    </div>
+                </div>`;
+
+            const recentReviewsHTML = user.recentReviews.map(review => `
+                <div class="flex-shrink-0 w-32 md:w-40" data-nav="production" data-id="${review.id}">
+                    <img src="${review.poster}" alt="${review.title}" class="w-full h-auto rounded-lg shadow-md cursor-pointer transition-transform duration-200 hover:scale-105">
+                </div>
+            `).join('');
+
+            const profileHTML = `
+                <div class="flex items-center space-x-6 p-6 bg-white rounded-lg shadow-sm border border-gray-200 mb-8">
+                    <img src="${user.avatar}" alt="Profil Resmi" class="w-24 h-24 md:w-32 md:h-32 rounded-full border-4 border-gray-100">
+                    <div>
+                        <h1 class="text-3xl font-bold text-gray-900">${user.username}</h1>
+                        <div class="flex space-x-4 text-gray-600 mt-2">
+                            <span><span class="font-semibold">105</span> Takipçi</span>
+                            <span><span class="font-semibold">200</span> Takip Edilen</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mb-8">
+                    <h2 class="text-xl font-semibold mb-4 text-gray-900">Son İncelemeler</h2>
+                    <div class="flex space-x-4 overflow-x-auto pb-4">
+                        ${recentReviewsHTML}
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+                        <h3 class="text-lg font-semibold text-gray-900 mb-4">Puan Dağılımı</h3>
+                        <div class="relative w-full max-w-lg mx-auto h-64 md:h-80">
+                            <canvas id="userRatingChart"></canvas>
+                        </div>
+                    </div>
+                    <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+                        <h3 class="text-lg font-semibold text-gray-900 mb-4">Favori Türler</h3>
+                        <div class="relative w-full max-w-lg mx-auto h-64 md:h-80">
+                            <canvas id="userGenreChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            appContent.innerHTML = statsHTML + profileHTML;
+            createUserCharts(user.ratings, user.genres);
+        }
+
+        function createUserCharts(ratingData, genreData) {
+            const ratingCtx = document.getElementById('userRatingChart');
+            if(ratingCtx) {
+                chartInstances.userRatingChart = new Chart(ratingCtx, {
+                    type: 'bar',
+                    data: {
+                        labels: ['★', '★★', '★★★', '★★★★', '★★★★★'],
+                        datasets: [{
+                            label: 'Puan Sayısı',
+                            data: ratingData,
+                            backgroundColor: '#FFC107',
+                        }]
+                    },
+                    options: {
+                        indexAxis: 'y',
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: { legend: { display: false } },
+                        scales: { x: { beginAtZero: true } }
+                    }
+                });
+            }
+
+            const genreCtx = document.getElementById('userGenreChart');
+            if(genreCtx) {
+                chartInstances.userGenreChart = new Chart(genreCtx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: genreData.map(g => g.label),
+                        datasets: [{
+                            data: genreData.map(g => g.count),
+                            backgroundColor: ['#FFC107', '#FFD54F', '#FFECB3', '#FFA000', '#FFCA28'],
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { position: 'bottom' }
+                        }
+                    }
+                });
+            }
+        }
+
+        function renderProductionDetail(id) {
+            destroyCharts();
+            const prod = mockData.productions[id];
+            if (!prod) {
+                appContent.innerHTML = '<p class="text-red-500">Yapım bulunamadı.</p>';
+                return;
+            }
+
+            const castHTML = prod.cast.map(person => `
+                <div class="text-center flex-shrink-0 w-28">
+                    <img src="${person.photo}" alt="${person.name}" class="w-24 h-24 rounded-full mx-auto shadow-md mb-2">
+                    <p class="text-sm font-semibold">${person.name}</p>
+                </div>
+            `).join('');
+
+            const crewHTML = prod.crew.map(person => `
+                <div class="text-center">
+                    <p class="text-md font-semibold">${person.name}</p>
+                    <p class="text-sm text-gray-600">${person.role}</p>
+                </div>
+            `).join('');
+
+            const productionHTML = `
+                <div class="relative w-full h-64 md:h-96 rounded-lg overflow-hidden shadow-lg backdrop-blur-image" style="background-image: url('${prod.backdrop}')">
+                    <div class="relative h-full flex items-end p-4 md:p-8">
+                        <div class="flex items-end space-x-6">
+                            <img src="${prod.poster}" alt="${prod.title} Poster" class="relative w-32 md:w-48 h-auto rounded-lg shadow-2xl border-4 border-white">
+                            <div class="relative bottom-0">
+                                <h1 class="text-4xl md:text-5xl font-bold text-gray-900">${prod.title} <span class="text-3xl font-light text-gray-700">(${prod.year})</span></h1>
+                                <p class="text-lg text-gray-800 mt-1">Yönetmen: <span class="font-semibold">${prod.director}</span></p>
+                                <p class="text-2xl font-bold text-accent mt-2">★★★★☆ <span class="text-gray-900">${prod.avgRating}</span></p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="my-8 p-4 bg-white rounded-lg shadow-sm border border-gray-200">
+                    <div class="flex flex-wrap justify-around items-center">
+                        <div class="action-button rating-stars p-2" id="user-rating-stars">
+                            <div class="action-button-icon text-3xl text-gray-300">
+                                <span data-rating="1" class="hover:text-accent">★</span>
+                                <span data-rating="2" class="hover:text-accent">★</span>
+                                <span data-rating="3" class="hover:text-accent">★</span>
+                                <span data-rating="4" class="hover:text-accent">★</span>
+                                <span data-rating="5" class="hover:text-accent">★</span>
+                            </div>
+                            <span class="action-button-text">Puan Ver</span>
+                        </div>
+                        <button class="action-button p-2" id="action-like">
+                            <span class="action-button-icon text-2xl">♡</span>
+                            <span class="action-button-text">Beğen</span>
+                        </button>
+                        <button class="action-button p-2" id="action-watchlist">
+                            <span class="action-button-icon text-2xl">⊕</span>
+                            <span class="action-button-text">İzleme Listesi</span>
+                        </button>
+                        <button class="action-button p-2" id="action-review">
+                            <span class="action-button-icon text-2xl">✎</span>
+                            <span class="action-button-text">İncele / Logla</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-lg shadow-sm border border-gray-200">
+                    <div class="border-b border-gray-200">
+                        <nav class="flex space-x-6 -mb-px px-6" id="tabs">
+                            <button data-tab="overview" class="tab-button py-4 px-1 border-b-2 border-transparent text-sm font-medium tab-active">GENEL BAKIŞ</button>
+                            <button data-tab="reviews" class="tab-button py-4 px-1 border-b-2 border-transparent text-sm font-medium tab-inactive">İNCELEMELER</button>
+                            <button data-tab="lists" class="tab-button py-4 px-1 border-b-2 border-transparent text-sm font-medium tab-inactive">LİSTELER</button>
+                        </nav>
+                    </div>
+                    <div class="p-6">
+                        <div id="tab-overview" class="tab-panel">
+                            <p class="text-gray-700 leading-relaxed mb-6">${prod.plot}</p>
+                            <h3 class="text-lg font-semibold text-gray-900 mb-4">Oyuncular</h3>
+                            <div class="flex space-x-6 overflow-x-auto pb-4 mb-6">
+                                ${castHTML}
+                            </div>
+                            <h3 class="text-lg font-semibold text-gray-900 mb-4">Ekip</h3>
+                            <div class="flex space-x-8 mb-6">
+                                ${crewHTML}
+                            </div>
+                            <h3 class="text-lg font-semibold text-gray-900 mb-4">Topluluk Puan Dağılımı</h3>
+                            <div class="relative w-full max-w-lg mx-auto h-64 md:h-72">
+                                <canvas id="communityRatingChart"></canvas>
+                            </div>
+                        </div>
+                        <div id="tab-reviews" class="tab-panel hidden">
+                            <p class="text-gray-600">Henüz hiç inceleme yapılmamış.</p>
+                        </div>
+                        <div id="tab-lists" class="tab-panel hidden">
+                            <p class="text-gray-600">Bu yapım henüz bir listeye eklenmemiş.</p>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            appContent.innerHTML = productionHTML;
+            createProductionChart(prod.communityRatings);
+            initTabbedContent();
+            initActionButtons(id);
+        }
+
+        function createProductionChart(ratingData) {
+            const ctx = document.getElementById('communityRatingChart');
+            if(ctx) {
+                chartInstances.communityRatingChart = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: ['★', '★★', '★★★', '★★★★', '★★★★★'],
+                        datasets: [{
+                            label: 'Puan Sayısı',
+                            data: ratingData,
+                            backgroundColor: '#FFC107',
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: { legend: { display: false } },
+                        scales: { y: { beginAtZero: true } }
+                    }
+                });
+            }
+        }
+
+        function initTabbedContent() {
+            const tabs = document.getElementById('tabs');
+            if (!tabs) return;
+            const tabButtons = tabs.querySelectorAll('.tab-button');
+            const tabPanels = tabs.parentElement.nextElementSibling.querySelectorAll('.tab-panel');
+
+            tabButtons.forEach(button => {
+                button.addEventListener('click', () => {
+                    tabButtons.forEach(btn => btn.classList.replace('tab-active', 'tab-inactive'));
+                    button.classList.replace('tab-inactive', 'tab-active');
+
+                    tabPanels.forEach(panel => {
+                        if (panel.id === `tab-${button.dataset.tab}`) {
+                            panel.classList.remove('hidden');
+                        } else {
+                            panel.classList.add('hidden');
+                        }
+                    });
+                });
+            });
+        }
+
+        function initActionButtons(productionId) {
+            const starContainer = document.getElementById('user-rating-stars');
+            const stars = starContainer ? Array.from(starContainer.querySelectorAll('span[data-rating]')) : [];
+            let currentRating = 0;
+
+            const setRating = (rating) => {
+                stars.forEach(star => {
+                    if (parseInt(star.dataset.rating) <= rating) {
+                        star.style.color = 'var(--color-accent)';
+                    } else {
+                        star.style.color = '#D1D5DB';
+                    }
+                });
+            };
+
+            stars.forEach(star => {
+                star.addEventListener('mouseenter', () => {
+                    setRating(parseInt(star.dataset.rating));
+                });
+                star.addEventListener('mouseleave', () => {
+                    setRating(currentRating);
+                });
+                star.addEventListener('click', () => {
+                    currentRating = parseInt(star.dataset.rating);
+                    setRating(currentRating);
+                });
+            });
+
+            document.getElementById('action-review')?.addEventListener('click', () => openReviewModal(productionId));
+        }
+
+        function openReviewModal(productionId) {
+            const prod = mockData.productions[productionId];
+            if (prod) {
+                document.getElementById('modal-production-title').textContent = `İncele: ${prod.title}`;
+                document.getElementById('modal-production-year').textContent = `(${prod.year})`;
+            } else {
+                document.getElementById('modal-production-title').textContent = 'Yapımı İncele';
+                document.getElementById('modal-production-year').textContent = '';
+            }
+
+            const today = new Date().toISOString().split('T')[0];
+            modal.querySelector('input[type="date"]').value = today;
+
+            modal.classList.remove('hidden');
+        }
+
+        function closeReviewModal() {
+            modal.classList.add('hidden');
+        }
+
+        function handleNavigation(event) {
+            let target = event.target;
+            while (target && !target.dataset.nav) {
+                target = target.parentElement;
+            }
+            if (target && target.dataset.nav) {
+                event.preventDefault();
+                const navTarget = target.dataset.nav;
+                const productionId = target.dataset.id;
+
+                if (navTarget === 'profile') {
+                    renderUserProfile();
+                } else if (navTarget === 'production' && productionId) {
+                    renderProductionDetail(productionId);
+                }
+            }
+        }
+
+        function initApp() {
+            document.addEventListener('click', handleNavigation);
+            document.getElementById('open-review-modal-global').addEventListener('click', () => openReviewModal(null));
+            document.getElementById('close-review-modal').addEventListener('click', closeReviewModal);
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) {
+                    closeReviewModal();
+                }
+            });
+
+            renderUserProfile();
+        }
+
+        document.addEventListener('DOMContentLoaded', initApp);
+
+    </script>
+</body>
+</html>
