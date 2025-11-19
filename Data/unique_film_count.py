@@ -1,22 +1,36 @@
 import pandas as pd
 import os
+import glob
 
-# Aynı klasördeki Excel dosyasını bul (ilk .xlsx uzantılı dosya)
-for file in os.listdir():
-    if file.endswith(".xlsx"):
-        excel_file = file
-        break
-else:
-    raise FileNotFoundError("Klasörde herhangi bir .xlsx dosyası bulunamadı.")
+# Script klasörü
+base_dir = os.path.dirname(os.path.abspath(__file__))
+excel_dir = os.path.join(base_dir, "raw_excels")
+
+if not os.path.exists(excel_dir):
+    raise FileNotFoundError("'raw_excels' klasörü bulunamadı.")
+
+# Excel dosyalarını listele
+excel_files = glob.glob(os.path.join(excel_dir, "*.xls*"))
+
+if not excel_files:
+    raise FileNotFoundError("raw_excels içinde Excel dosyası bulunamadı.")
+
+# En güncel Excel dosyasını bul (modified time'a göre)
+latest_file = max(excel_files, key=os.path.getmtime)
+
+print("Okunan en güncel dosya:", os.path.basename(latest_file))
 
 # Excel dosyasını oku
-df = pd.read_excel(excel_file)
+df = pd.read_excel(latest_file)
 
-# 'Title' kolonunun var olup olmadığını kontrol et
-if 'Title' not in df.columns:
+# Kolonları göster (debug amaçlı)
+print("Kolonlar:", df.columns.tolist())
+
+# Title kolonu var mı?
+if "Title" not in df.columns:
     raise KeyError("'Title' adlı bir sütun bulunamadı.")
 
-# Unique değer sayısını hesapla
-unique_count = df['Title'].nunique()
+# Unique değer sayısı
+unique_count = df["Title"].nunique()
 
-print(f"'{excel_file}' dosyasındaki 'Title' sütununda {unique_count} farklı değer var.")
+print(f"'{os.path.basename(latest_file)}' dosyasındaki 'Title' sütununda {unique_count} farklı değer var.")

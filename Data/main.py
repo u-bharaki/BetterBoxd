@@ -30,7 +30,7 @@ LISTS_TABLE_NAME = "lists"
 PRODUCTIONS_IN_LISTS_TABLE_NAME = "productions_in_lists"
 REVIEWS_TABLE_NAME = "reviews"
 
-APPROX_FILM_COUNT = 200
+APPROX_FILM_COUNT = 100_000
 TOTAL_QUERY_COUNT = 0
 current_key_index = 0
 START_TERM_INDEX = 0
@@ -40,6 +40,7 @@ ITEM_INDEX = 0
 api_keys = []
 
 is_api_keys_finished = False
+last_second_letter = None #for auto save
 
 ROLE_ACTOR = "actor"
 ROLE_DIRECTOR = "director"
@@ -98,6 +99,8 @@ def renew_api_key():
         print("\n[ERROR] Tüm API anahtarları kullanıldı.")
         return False
     print(f"\n[INFO] API key yenilendi. Yeni anahtar: {api_keys[current_key_index]}")
+    print("[INFO] API key değiştirildi, 5 saniye bekleniyor..")
+    time.sleep(5)
     return True
 
 def load_last_session():
@@ -184,109 +187,160 @@ class DualLogger:
         self.log.flush()
 
 def get_films(approx_film_count, conn, cursor):
-
-    # If not exists, create database folder
-    Path("logs").mkdir(parents=True, exist_ok=True)
-    # Create log file
-    global LOG_FILE, TERM_INDEX, PAGE_INDEX, TOTAL_QUERY_COUNT
-    LOG_FILE = f"logs/{get_time_str()}.log"
-    sys.stdout = DualLogger(LOG_FILE)
-
-    load_api_keys()
-
     all_data = []
 
-    # Arama kelimeleri: tek harfli + çift harfli kombinasyonlar
-    search_terms = [chr(i) for i in range(97, 99)]  # a-z
-    search_terms += [chr(i) + chr(j) for i in range(97, 123) for j in range(97, 123)]
-    search_terms = [chr(i) + chr(j) + chr(k) for i in range(97, 123) for j in range(97, 123) for k in range(97, 123)]
-    query_count = 0
-    for TERM_INDEX in range(START_TERM_INDEX, len(search_terms)):
-        term = search_terms[TERM_INDEX]
-        print(f"\n[INFO] '{term}' ARANIYOR...-----------------------------------------------------------")
-        if query_count != 0:
-            PAGE_INDEX = 1
-        while query_count < approx_film_count:
-            query_count += 1
-            params = {"s": term, "page": PAGE_INDEX}
-            BASE_URL = get_current_api_key()
-            if is_api_keys_finished:
-                transfer_to_excel(all_data)
-            response = requests.get(BASE_URL, params=params)
-            try:
-                data = response.json()
-            except:
-                print("[ERROR] 1 -----------------------------------------")
-                continue
-            print(f"[INFO - LIST] {query_count} - TERM '{term}' - PAGE '{PAGE_INDEX}' - {data}")
+    try:
 
-            if data.get("Error") == "Request limit reached!":
-                print(f"[WARNING] Limit doldu -> {BASE_URL}")
-                success = renew_api_key()
-                if success:
-                    continue  # Yeni anahtarla tekrar dene
-                else:
-                    save_session()
+        # If not exists, create database folder
+        Path("logs").mkdir(parents=True, exist_ok=True)
+        # Create log file
+        global LOG_FILE, TERM_INDEX, PAGE_INDEX, TOTAL_QUERY_COUNT
+        LOG_FILE = f"logs/{get_time_str()}.log"
+        sys.stdout = DualLogger(LOG_FILE)
+
+        load_api_keys()
+
+        search_terms = []
+
+        # 3 harfli
+        for i in range(97, 123):
+            for j in range(97, 123):
+                for k in range(97, 123):
+                    search_terms.append(chr(i) + chr(j) + chr(k))
+
+        query_count = 0
+        for TERM_INDEX in range(START_TERM_INDEX, len(search_terms)):
+            term = search_terms[TERM_INDEX]
+            auto_save_on_term_change(term)
+            print(f"\n[INFO] '{term}' ARANIYOR...-----------------------------------------------------------")
+            if query_count != 0:
+                PAGE_INDEX = 1
+            while query_count < approx_film_count:
+                query_count += 1
+                params = {"s": term, "page": PAGE_INDEX}
+                BASE_URL = get_current_api_key()
+                if is_api_keys_finished:
                     transfer_to_excel(all_data)
+                try:
+                    response = requests.get(BASE_URL, params=params)
+                    data = response.json()
+                except Exception as e:
+                    print("[ERROR] Request hata verdi: {e}")
+                    save_session()
+                    conn.commit()
+                    continue
+                print(f"[INFO - LIST] {query_count} - TERM '{term}' - PAGE '{PAGE_INDEX}' - {data}")
 
-            if data.get("Response") == "True":
-
-                n = 0
-                global ITEM_INDEX
-                for item_index in range(0, len(data.get("Search", []))):
-                    ITEM_INDEX = item_index
-                    item = data.get("Search", [])[item_index]
-                    title = item.get("Title")
-
-                    BASE_URL = get_current_api_key()
-                    if is_api_keys_finished:
+                if data.get("Error") == "Request limit reached!":
+                    print(f"[WARNING] Limit doldu -> {BASE_URL}")
+                    success = renew_api_key()
+                    if success:
+                        continue  # Yeni anahtarla tekrar dene
+                    else:
+                        save_session()
                         transfer_to_excel(all_data)
-                    # Detaylı veri çek (Title, Year, Director, vs.)
-                    detail_resp = requests.get(BASE_URL, params={"t": title})
-                    query_count += 1
-                    try:
-                        details = detail_resp.json()
-                    except:
-                        print("[ERROR] 2 -----------------------------------------")
+
+                if data.get("Error") == "Invalid API key!":
+                    print(f"[ERROR] Invalid key: {BASE_URL} - Bir sonraki key'e geçiliyor...")
+                    success = renew_api_key()
+                    if success:
                         continue
-                    print(f"[INFO - FILM] {query_count} - {details}")
+                    else:
+                        save_session()
+                        transfer_to_excel(all_data)
 
-                    if details.get("Error") == "Request limit reached!":
-                        print(f"[WARNING] Limit doldu -> {BASE_URL}")
-                        success = renew_api_key()
-                        if success:
-                            continue  # Yeni anahtarla tekrar dene
-                        else:
+                if data.get("Response") == "True":
+
+                    n = 0
+                    global ITEM_INDEX
+                    for item_index in range(0, len(data.get("Search", []))):
+                        ITEM_INDEX = item_index
+                        item = data.get("Search", [])[item_index]
+                        title = item.get("Title")
+
+                        BASE_URL = get_current_api_key()
+                        if is_api_keys_finished:
                             transfer_to_excel(all_data)
+                        # Detaylı veri çek (Title, Year, Director, vs.)
 
-                    if details.get("Response") == "True":
-                        insert_to_sql(details, conn, cursor)
-                        all_data.append(details)
-                        n += 1
-                if n >= 10:
-                    PAGE_INDEX += 1
+                        try:
+                            detail_resp = requests.get(BASE_URL, params={"t": title})
+                            query_count += 1
+                            details = detail_resp.json()
+                        except Exception as e:
+                            print("[ERROR] Detail request hata verdi: {e}")
+                            save_session()
+                            conn.commit()
+                            continue
+                        print(f"[INFO - FILM] {query_count} - {details}")
+
+                        if details.get("Error") == "Request limit reached!":
+                            print(f"[WARNING] Limit doldu -> {BASE_URL}")
+                            success = renew_api_key()
+                            if success:
+                                continue  # Yeni anahtarla tekrar dene
+                            else:
+                                transfer_to_excel(all_data)
+
+                        if details.get("Error") == "Invalid API key!":
+                            print(f"[ERROR] Invalid key (detail lookup): {BASE_URL}")
+                            success = renew_api_key()
+                            if success:
+                                continue
+                            else:
+                                transfer_to_excel(all_data)
+
+                        if details.get("Response") == "True":
+                            insert_to_sql(details, conn, cursor)
+                            all_data.append(details)
+                            n += 1
+                    if n >= 10:
+                        PAGE_INDEX += 1
+                    else:
+                        break
                 else:
+                    print("[WARNING] Başarısız! Sonraki term'e geçiliyor.")
                     break
-            else:
-                print("[WARNING] Başarısız!")
-                TERM_INDEX -= 1
+                time.sleep(0.2)  # rate limit'e yakalanmamak için
+            if query_count >= approx_film_count:
+                TOTAL_QUERY_COUNT += query_count
                 break
-            time.sleep(0.2)  # rate limit'e yakalanmamak için
-        if query_count >= approx_film_count:
-            TOTAL_QUERY_COUNT += query_count
-            break
-    transfer_to_excel(all_data)
+        transfer_to_excel(all_data)
+    except KeyboardInterrupt:
+        print("\n[INFO] Kullanıcı Ctrl+C ile programı durdurdu.")
+        try:
+            conn.commit()
+        except Exception as e:
+            print(f"[ERROR] Ctrl+C sırasında conn.commit hata verdi: {e}")
+        try:
+            transfer_to_excel(all_data)
+        except Exception as e:
+            print(f"[ERROR] Ctrl+C sırasında transfer_to_excel hata verdi: {e}")
+
+    except Exception as e:
+        print(f"[FATAL ERROR in get_films]: {e}")
+        save_session()
+        transfer_to_excel(all_data)
 
 def transfer_to_excel(all_data):
-    Path("raw_excels").mkdir(parents=True, exist_ok=True)
-    conn.commit()
-    df = pd.DataFrame(all_data)
-    global NEW_EXCEL_FILE
-    NEW_EXCEL_FILE = f"raw_excels/omdb_full_dataset_{get_time_str()}.xlsx"
-    df.to_excel(NEW_EXCEL_FILE, index=False)
-    print(f"✅ Tüm veriler '{NEW_EXCEL_FILE}' dosyasına kaydedildi.")
-    save_session()
-    exit(0)
+    try:
+        Path("raw_excels").mkdir(parents=True, exist_ok=True)
+        conn.commit()
+        df = pd.DataFrame(all_data)
+        global NEW_EXCEL_FILE
+        NEW_EXCEL_FILE = f"raw_excels/omdb_full_dataset_{get_time_str()}.xlsx"
+        df.to_excel(NEW_EXCEL_FILE, index=False)
+        print(f"✅ Tüm veriler '{NEW_EXCEL_FILE}' dosyasına kaydedildi.")
+    except Exception as e:
+        print(f"[ERROR] Excel yazılamadı: {e}")
+
+    try:
+        save_session()
+    except Exception as e:
+        print(f"[ERROR] save_session hata verdi: {e}")
+
+    print("[INFO] Program güvenli bir şekilde kapatılıyor.")
+    sys.exit(0)
 
 def get_film_debug(api_key, film_title):
     detail_resp = requests.get(api_key, params={"t": film_title})
@@ -573,9 +627,57 @@ def insert_to_sql(data, conn, cursor):
 
     conn.commit()
 
-load_last_session()
+def auto_save_on_term_change(term):
+    global last_second_letter
+    if last_second_letter is None:
+        last_second_letter = term[1]
+        save_session()
+        print(f"[AUTO-SAVE] İlk TERM için save yapıldı ({term})")
+        return
 
-conn, cursor = connect_sqlite()
-create_tables(cursor)
+    if term[1] != last_second_letter:
+        save_session()
+        print(f"[AUTO-SAVE] 2. harf değiştiği için save yapıldı ({last_second_letter} → {term[1]})")
+        last_second_letter = term[1]
 
-get_films(APPROX_FILM_COUNT, conn, cursor)
+try:
+    load_last_session()
+    conn, cursor = connect_sqlite()
+    create_tables(cursor)
+    get_films(APPROX_FILM_COUNT, conn, cursor)
+
+except KeyboardInterrupt:
+    print("\n[INFO] Kullanıcı Ctrl+C ile programı durdurdu (main).")
+    try:
+        save_session()
+    except:
+        print("[ERROR]: save_session() Ctrl+C sırasında hata verdi")
+    try:
+        conn.commit()
+    except:
+        pass
+    try:
+        transfer_to_excel([])
+    except:
+        print("[ERROR] transfer_to_excel Ctrl+C sırasında çalışmadı")
+
+except Exception as e:
+    print(f"[FATAL ERROR]: {e}")
+    try:
+        save_session()
+    except:
+        print("[ERROR]: save_session() çağrılırken hata oluştu")
+    try:
+        conn.commit()
+    except:
+        pass
+
+    try:
+        transfer_to_excel([])
+    except:
+        print("[ERROR] transfer_to_excel çalışmadı")
+finally:
+    try:
+        conn.close()
+    except:
+        pass
