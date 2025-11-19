@@ -405,6 +405,7 @@ def create_tables(cursor):
         email TEXT NOT NULL,
         first_name TEXT NOT NULL,
         last_name TEXT NOT NULL,
+        last_login TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
         created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
     )
     """)
