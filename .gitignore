@@ -1,24 +1,24 @@
 # API Keys
-api_keys.txt
+Data/api_keys.txt
 
 # Databases
-*.db
-*.db-journal*
-*.sqlite
-*.sqlite3
-databases/
+Data/*.db
+Data/*.db-journal*
+Data/*.sqlite
+Data/*.sqlite3
+Data/databases/
 
 # Logs
-*.log
-logs/
+Data/*.log
+Data/logs/
 
 # Raw Datas
-*.xlsx
-*.csv
-raw_excels/
+Data/*.xlsx
+Data/*.csv
+Data/raw_excels/
 
 # Save Files
-save[0-9]*.txt
+Data/save[0-9]*.txt
 
 # IDE Config
 .idea/

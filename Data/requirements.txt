@@ -1,0 +1,9 @@
+pandas
+requests
+openpyxl
+
+# save[0-9]*.txt file may exist. Otherwise will be created.
+
+# databases, logs, raw_excels folders should exist. Otherwise will be created.
+
+# api_keys.txt file must exist. Otherwise main.py won't start.
