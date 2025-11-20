@@ -1,0 +1,1226 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BetterBoxd - Film ve Dizi Takip Platformu</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Merriweather:wght@300;400&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #14181C;
+            color: #E0E0E0;
+            line-height: 1.6;
+        }
+
+        /* Global Navigation */
+        .header {
+            position: sticky;
+            top: 0;
+            background-color: #1C2329;
+            padding: 15px 0;
+            z-index: 1000;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.5);
+        }
+
+        .nav-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 30px;
+        }
+
+        .logo {
+            font-size: 24px;
+            font-weight: 700;
+            color: #FFC107;
+            text-decoration: none;
+            white-space: nowrap;
+            cursor: pointer;
+        }
+
+        .search-bar {
+            flex: 1;
+            max-width: 500px;
+            position: relative;
+        }
+
+        .search-bar input {
+            width: 100%;
+            padding: 10px 20px;
+            background-color: #2C343A;
+            border: 2px solid transparent;
+            border-radius: 20px;
+            color: #E0E0E0;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+
+        .search-bar input:focus {
+            outline: none;
+            border-color: #FFC107;
+            background-color: #3A424A;
+        }
+
+        .nav-links {
+            display: flex;
+            align-items: center;
+            gap: 25px;
+            white-space: nowrap;
+        }
+
+        .nav-links a {
+            color: #E0E0E0;
+            text-decoration: none;
+            font-weight: 500;
+            transition: color 0.3s;
+            cursor: pointer;
+        }
+
+        .nav-links a:hover {
+            color: #FFC107;
+        }
+
+        .btn-primary {
+            background-color: #FFC107;
+            color: #14181C;
+            padding: 10px 25px;
+            border-radius: 20px;
+            text-decoration: none;
+            font-weight: 600;
+            transition: all 0.3s;
+            border: none;
+            cursor: pointer;
+        }
+
+        .btn-primary:hover {
+            background-color: #FFD54F;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(255, 193, 7, 0.3);
+        }
+
+        .profile-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background-color: #FFC107;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            color: #14181C;
+            cursor: pointer;
+            position: relative;
+        }
+
+        .profile-dropdown {
+            display: none;
+            position: absolute;
+            top: 50px;
+            right: 0;
+            background-color: #2C343A;
+            border-radius: 10px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.5);
+            min-width: 200px;
+            overflow: hidden;
+        }
+
+        .profile-dropdown.active {
+            display: block;
+        }
+
+        .profile-dropdown a {
+            display: block;
+            padding: 15px 20px;
+            color: #E0E0E0;
+            text-decoration: none;
+            transition: background-color 0.3s;
+        }
+
+        .profile-dropdown a:hover {
+            background-color: #3A424A;
+            color: #FFC107;
+        }
+
+        /* Pages */
+        .page {
+            display: none;
+        }
+
+        .page.active {
+            display: block;
+        }
+
+        /* Production Detail Page */
+        .production-header {
+            position: relative;
+            height: 500px;
+            overflow: hidden;
+        }
+
+        .backdrop {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            filter: blur(8px) brightness(0.4);
+        }
+
+        .production-info {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            display: flex;
+            align-items: center;
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 30px;
+            gap: 40px;
+        }
+
+        .poster {
+            width: 300px;
+            height: 450px;
+            border-radius: 10px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.8);
+            object-fit: cover;
+        }
+
+        .production-details {
+            flex: 1;
+        }
+
+        .production-title {
+            font-size: 48px;
+            font-weight: 700;
+            color: #FFFFFF;
+            margin-bottom: 10px;
+        }
+
+        .production-year {
+            font-size: 24px;
+            color: #B0B0B0;
+            margin-bottom: 20px;
+        }
+
+        .production-meta {
+            font-size: 16px;
+            margin-bottom: 30px;
+        }
+
+        .production-meta span {
+            color: #FFC107;
+            font-weight: 600;
+        }
+
+        .rating-display {
+            font-size: 20px;
+            margin-bottom: 30px;
+        }
+
+        .stars {
+            color: #FFC107;
+            margin-right: 10px;
+        }
+
+        /* Action Block */
+        .action-block {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        .action-btn {
+            background-color: #2C343A;
+            color: #E0E0E0;
+            padding: 12px 25px;
+            border-radius: 8px;
+            border: 2px solid #3A424A;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .action-btn:hover {
+            border-color: #FFC107;
+            background-color: #3A424A;
+        }
+
+        .action-btn.primary {
+            background-color: #FFC107;
+            color: #14181C;
+            border-color: #FFC107;
+        }
+
+        .action-btn.primary:hover {
+            background-color: #FFD54F;
+        }
+
+        .action-btn.active {
+            border-color: #FFC107;
+            background-color: #3A424A;
+        }
+
+        .star-rating {
+            display: flex;
+            gap: 5px;
+            font-size: 24px;
+            direction: ltr;
+        }
+
+        .star-rating .star {
+            cursor: pointer;
+            color: #4A5158;
+            transition: color 0.2s;
+            position: relative;
+            display: inline-block;
+        }
+
+        .star-rating .star.filled {
+            color: #FFC107;
+        }
+
+        .star-rating .star.half-filled::before {
+            content: '★';
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 50%;
+            overflow: hidden;
+            color: #FFC107;
+        }
+
+        /* Content Section */
+        .content-section {
+            max-width: 1400px;
+            margin: 50px auto;
+            padding: 0 30px;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 30px;
+            border-bottom: 2px solid #2C343A;
+            margin-bottom: 40px;
+        }
+
+        .tab {
+            padding: 15px 0;
+            cursor: pointer;
+            font-weight: 600;
+            color: #B0B0B0;
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s;
+        }
+
+        .tab.active {
+            color: #FFC107;
+            border-bottom-color: #FFC107;
+        }
+
+        .tab:hover {
+            color: #E0E0E0;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .plot {
+            font-family: 'Merriweather', serif;
+            font-size: 18px;
+            line-height: 1.8;
+            color: #E0E0E0;
+            margin-bottom: 40px;
+        }
+
+        .cast-section {
+            margin-bottom: 40px;
+        }
+
+        .section-title {
+            font-size: 24px;
+            font-weight: 600;
+            color: #FFFFFF;
+            margin-bottom: 20px;
+        }
+
+        .cast-grid {
+            display: flex;
+            gap: 20px;
+            overflow-x: auto;
+            padding-bottom: 10px;
+        }
+
+        .cast-card {
+            min-width: 150px;
+            text-align: center;
+        }
+
+        .cast-image {
+            width: 150px;
+            height: 150px;
+            border-radius: 50%;
+            object-fit: cover;
+            margin-bottom: 10px;
+            border: 3px solid #2C343A;
+        }
+
+        .cast-name {
+            font-weight: 600;
+            color: #FFFFFF;
+            margin-bottom: 5px;
+        }
+
+        .cast-role {
+            font-size: 14px;
+            color: #B0B0B0;
+        }
+
+        /* Reviews */
+        .review-card {
+            background-color: #2C343A;
+            padding: 25px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+
+        .review-header {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+
+        .review-avatar {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background-color: #FFC107;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            color: #14181C;
+        }
+
+        .review-meta {
+            flex: 1;
+        }
+
+        .review-author {
+            font-weight: 600;
+            color: #FFFFFF;
+        }
+
+        .review-date {
+            font-size: 14px;
+            color: #B0B0B0;
+        }
+
+        .review-text {
+            font-family: 'Merriweather', serif;
+            line-height: 1.7;
+            color: #E0E0E0;
+        }
+
+        /* Simple Pages */
+        .simple-page {
+            max-width: 1400px;
+            margin: 50px auto;
+            padding: 0 30px;
+        }
+
+        .page-title {
+            font-size: 42px;
+            font-weight: 700;
+            color: #FFFFFF;
+            margin-bottom: 30px;
+        }
+
+        .page-content {
+            font-size: 18px;
+            line-height: 1.8;
+            color: #E0E0E0;
+        }
+
+        /* Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0, 0, 0, 0.85);
+            z-index: 2000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background-color: #2C343A;
+            padding: 40px;
+            border-radius: 15px;
+            max-width: 600px;
+            width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .modal-title {
+            font-size: 28px;
+            font-weight: 700;
+            color: #FFFFFF;
+            margin-bottom: 30px;
+        }
+
+        .form-group {
+            margin-bottom: 25px;
+        }
+
+        .form-label {
+            display: block;
+            font-weight: 600;
+            color: #E0E0E0;
+            margin-bottom: 10px;
+        }
+
+        .form-input,
+        .form-textarea {
+            width: 100%;
+            padding: 12px;
+            background-color: #3A424A;
+            border: 2px solid #4A5158;
+            border-radius: 8px;
+            color: #E0E0E0;
+            font-family: 'Inter', sans-serif;
+            font-size: 14px;
+        }
+
+        .form-textarea {
+            min-height: 150px;
+            resize: vertical;
+            font-family: 'Merriweather', serif;
+        }
+
+        .form-input:focus,
+        .form-textarea:focus {
+            outline: none;
+            border-color: #FFC107;
+        }
+
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: 15px;
+            margin-top: 30px;
+        }
+
+        .btn-secondary {
+            flex: 1;
+            padding: 12px 25px;
+            background-color: #3A424A;
+            color: #E0E0E0;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-secondary:hover {
+            background-color: #4A5158;
+        }
+
+        /* Feed ve Listeler için basit grid stili */
+        review-feed-card {
+            display: flex;
+            gap: 20px;
+            background: #2C343A;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-radius: 8px;
+            border-left: 4px solid #FFC107;
+        }
+        .feed-poster {
+            width: 80px;
+            border-radius: 4px;
+        }
+        .lists-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 20px;
+        }
+        .list-card {
+            background: #2C343A;
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+            cursor: pointer;
+            transition: transform 0.2s;
+            border: 1px solid #3A424A;
+        }
+        .list-card:hover {
+            transform: translateY(-5px);
+            border-color: #FFC107;
+        }
+
+        .star-rating {
+            display: inline-flex;
+            position: relative;
+            font-size: 0;
+            /* gap: 5px;  <-- BU SATIRI SİLDİK, SORUN BUYDU */
+            margin-left: -2px; /* Hafif sola çekip hizalar */
+        }
+
+        .star-rating .star {
+            width: 15px; /* Yıldızın tam yarısı */
+            height: 30px;
+            display: inline-block;
+            overflow: hidden;
+            cursor: pointer;
+            position: relative;
+        }
+
+        /* Yıldız İkonu */
+        .star-rating .star:before {
+            content: '★';
+            position: absolute;
+            top: 0;
+            font-size: 30px;
+            line-height: 30px;
+            color: #4A5158; /* Boş renk */
+            transition: color 0.2s;
+        }
+
+        /* Sol Parça (Tek sayılar: 1, 3, 5...) */
+        .star-rating .star:nth-child(odd) {
+            z-index: 1; /* Tıklamayı kolaylaştırmak için */
+        }
+        .star-rating .star:nth-child(odd):before {
+            left: 0;
+        }
+
+        /* Sağ Parça (Çift sayılar: 2, 4, 6...) */
+        .star-rating .star:nth-child(even):before {
+            right: 0;
+        }
+
+        /* Dolu Yıldız Rengi */
+        .star-rating .star.filled:before {
+            color: #FFC107;
+        }
+    </style>
+</head>
+<body>
+    <!-- Global Navigation -->
+    <header class="header">
+        <nav class="nav-container">
+            <a class="logo" onclick="navigateTo('production')">BetterBoxd</a>
+
+            <div class="search-bar">
+                <input type="text" placeholder="Film veya dizi ara...">
+            </div>
+
+            <div class="nav-links">
+                <button class="btn-primary" onclick="openModal()">+ İncele/Log</button>
+                <a onclick="navigateTo('feed')">Akış</a>
+                <a onclick="navigateTo('lists')">Listelerim</a>
+                <div class="profile-icon" onclick="toggleProfileDropdown()">
+                    A
+                    <div class="profile-dropdown" id="profileDropdown">
+                        <a onclick="navigateTo('diary')">Günlüğüm</a>
+                        <a onclick="navigateTo('profile')">Profilim</a>
+                        <a onclick="navigateTo('settings')">Ayarlar</a>
+                        <a onclick="alert('Çıkış yapıldı!')">Çıkış Yap</a>
+                    </div>
+                </div>
+            </div>
+        </nav>
+    </header>
+
+    <!-- Production Detail Page -->
+    <div id="production-page" class="page active">
+        <section class="production-header">
+            <img src="https://image.tmdb.org/t/p/original/s3TBrRGB1iav7gFOCNx3H31MoES.jpg" alt="Backdrop" class="backdrop">
+
+            <div class="production-info">
+                <img src="https://image.tmdb.org/t/p/w500/ljsZTbVsrQSqZgWeep2B1QiDKuh.jpg" alt="Inception Poster" class="poster">
+
+                <div class="production-details">
+                    <h1 class="production-title">Inception</h1>
+                    <div class="production-year">2010</div>
+
+                    <div class="production-meta">
+                        Yönetmen: <span>Christopher Nolan</span>
+                    </div>
+
+                    <div class="rating-display">
+                        <span class="stars">★★★★☆</span>
+                        <span>4.2 / 5.0</span>
+                    </div>
+
+                    <div class="action-block">
+                        <div class="action-btn">
+                            <div class="star-rating" id="userRating">
+                                <span class="star" data-value="1"></span>
+                                <span class="star" data-value="2"></span>
+                                <span class="star" data-value="3"></span>
+                                <span class="star" data-value="4"></span>
+                                <span class="star" data-value="5"></span>
+                                <span class="star" data-value="6"></span>
+                                <span class="star" data-value="7"></span>
+                                <span class="star" data-value="8"></span>
+                                <span class="star" data-value="9"></span>
+                                <span class="star" data-value="10"></span>
+                            </div>
+                        </div>
+                        <button class="action-btn" id="likeBtn" onclick="toggleLike()">♡ Beğen</button>
+                        <button class="action-btn" id="watchlistBtn" onclick="toggleWatchlist()">+ İzleme Listesi</button>
+                        <button class="action-btn primary" onclick="openModal()">+ İncele</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="content-section">
+            <div class="tabs">
+                <div class="tab active" onclick="switchTab(0)">Genel Bakış</div>
+                <div class="tab" onclick="switchTab(1)">İncelemeler</div>
+                <div class="tab" onclick="switchTab(2)">Listeler</div>
+                <div class="tab" onclick="switchTab(3)">İlgili Yapımlar</div>
+            </div>
+
+            <div class="tab-content active">
+                <div class="plot">
+                    Dom Cobb yetenekli bir hırsızdır. Uzmanlık alanı, zihnin en savunmasız olduğu rüya görme anında, bilinçaltının derinliklerindeki değerli sırları çekip çıkarmak ve onları çalmaktır. Cobb'un bu ender mahareti, onu kurumsal casusluğun tehlikeli yeni dünyasında aranan bir oyuncu yapmıştır. Aynı zamanda bu durum onu uluslararası bir kaçak yapmış ve sevdiği her şeye malolmuştur. Şimdi Cobb'a bir şans verilmiştir. Son bir iş ona hayatını geri kazandırabilir. Ama bunun için imkansız olanı başarması gerekmektedir.
+                </div>
+
+                <div class="cast-section">
+                    <h2 class="section-title">Oyuncular</h2>
+                    <div class="cast-grid">
+                        <div class="cast-card">
+                            <img src="https://image.tmdb.org/t/p/w185/iNc4kY4Q6CqbqVBYLMLjZIDbnLh.jpg" alt="Leonardo DiCaprio" class="cast-image">
+                            <div class="cast-name">Leonardo DiCaprio</div>
+                            <div class="cast-role">Dom Cobb</div>
+                        </div>
+                        <div class="cast-card">
+                            <img src="https://image.tmdb.org/t/p/w185/rLSUjr725ez1cK7SKVxC9udO03Y.jpg" alt="Marion Cotillard" class="cast-image">
+                            <div class="cast-name">Marion Cotillard</div>
+                            <div class="cast-role">Mal</div>
+                        </div>
+                        <div class="cast-card">
+                            <img src="https://image.tmdb.org/t/p/w185/4D0PpNI0kmP58hgrwGC3wCjxhnm.jpg" alt="Tom Hardy" class="cast-image">
+                            <div class="cast-name">Tom Hardy</div>
+                            <div class="cast-role">Eames</div>
+                        </div>
+                        <div class="cast-card">
+                            <img src="https://image.tmdb.org/t/p/w185/3oWEuo0e8Nx8JvkqYCDec2iMY6K.jpg" alt="Elliot Page" class="cast-image">
+                            <div class="cast-name">Elliot Page</div>
+                            <div class="cast-role">Ariadne</div>
+                        </div>
+                        <div class="cast-card">
+                            <img src="https://image.tmdb.org/t/p/w185/kuSlwTPsVlBMW0cvnFmbZce6PaV.jpg" alt="Joseph Gordon-Levitt" class="cast-image">
+                            <div class="cast-name">Joseph Gordon-Levitt</div>
+                            <div class="cast-role">Arthur</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="tab-content">
+                <div class="cast-section">
+                    <h2 class="section-title">Son İncelemeler</h2>
+
+                    <div class="review-card">
+                        <div class="review-header">
+                            <div class="review-avatar">M</div>
+                            <div class="review-meta">
+                                <div class="review-author">Mehmet Yılmaz</div>
+                                <div class="review-date">
+                                    <span class="stars">★★★★★</span> • 15 Kasım 2025
+                                </div>
+                            </div>
+                        </div>
+                        <div class="review-text">
+                            Christopher Nolan'ın şaheseri. Akıl oyunları, etkileyici görsellik ve Leonardo DiCaprio'nun muhteşem performansı ile sinema tarihinin unutulmaz filmlerinden biri. Her izleyişte yeni detaylar keşfediyorsunuz. Hans Zimmer'in müziği ise ayrı bir başyapıt.
+                        </div>
+                    </div>
+
+                    <div class="review-card">
+                        <div class="review-header">
+                            <div class="review-avatar">Z</div>
+                            <div class="review-meta">
+                                <div class="review-author">Zeynep Kaya</div>
+                                <div class="review-date">
+                                    <span class="stars">★★★★☆</span> • 10 Kasım 2025
+                                </div>
+                            </div>
+                        </div>
+                        <div class="review-text">
+                            Karmaşık ama bir o kadar da zevkli. İlk izleyişte tam anlamak zor olsa da, tekrar izlediğinizde tüm parçalar yerine oturuyor. Görsel efektler çağını aşmış durumda. Kesinlikle tavsiye ederim.
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="tab-content">
+                <div class="cast-section">
+                    <h2 class="section-title">Bu Yapımı İçeren Listeler</h2>
+                    <div class="page-content">
+                        <p>• En İyi Christopher Nolan Filmleri</p>
+                        <p>• Akıl Oyunları ve Twist Sonlar</p>
+                        <p>• Bilim Kurgu Başyapıtları</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="tab-content">
+                <div class="cast-section">
+                    <h2 class="section-title">İlgili Yapımlar</h2>
+                    <div class="page-content">
+                        <p>• Interstellar (2014)</p>
+                        <p>• The Prestige (2006)</p>
+                        <p>• Shutter Island (2010)</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <!-- Feed Page (Akış) -->
+    <div id="feed-page" class="page">
+        <div class="simple-page">
+            <h1 class="page-title">Arkadaşların Ne İzliyor?</h1>
+            <!-- JS buraya kartları dolduracak -->
+            <div id="feed-container" class="grid-container">
+                <p>Yükleniyor...</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Lists Page (Listelerim) -->
+    <div id="lists-page" class="page">
+        <div class="simple-page">
+            <h1 class="page-title">Listelerim</h1>
+            <!-- JS buraya listeleri dolduracak -->
+            <div id="lists-container" class="lists-grid">
+                <p>Listeler yükleniyor...</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Profile Page (Profil) -->
+    <div id="profile-page" class="page">
+        <div class="production-header" style="height: 300px;">
+            <!-- Profil Banner'ı (Placeholder resim) -->
+            <img src="https://via.placeholder.com/1500x500/14181C/333" class="backdrop">
+            <div class="production-info" style="justify-content: center; flex-direction: column; align-items: center;">
+                <div class="profile-icon" style="width: 100px; height: 100px; font-size: 40px; margin-bottom: 20px;">A</div>
+                <h1 class="production-title" id="profile-name">Yükleniyor...</h1>
+                <div class="production-meta" id="profile-username">@...</div>
+
+                <div class="action-block" style="justify-content: center;">
+                    <div class="action-btn"><span id="stat-watched">0</span> Film</div>
+                    <div class="action-btn"><span id="stat-lists">0</span> Liste</div>
+                    <div class="action-btn"><span id="stat-followers">0</span> Takipçi</div>
+                    <div class="action-btn"><span id="stat-following">0</span> Takip Edilen</div>
+                </div>
+            </div>
+        </div>
+        <!-- Buraya kullanıcının son incelemeleri de eklenebilir -->
+    </div>
+
+    <!-- Diary Page -->
+    <div id="diary-page" class="page">
+        <div class="simple-page">
+            <h1 class="page-title">Günlüğüm</h1>
+            <div class="page-content">
+                <p>İzleme geçmişiniz burada görünecek.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Settings Page -->
+    <div id="settings-page" class="page">
+        <div class="simple-page">
+            <h1 class="page-title">Ayarlar</h1>
+            <div class="page-content">
+                <p>Hesap ayarlarınız burada görünecek.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Review Modal -->
+    <div class="modal" id="reviewModal">
+        <div class="modal-content">
+            <h2 class="modal-title">Inception'ı İncele</h2>
+
+            <div class="form-group">
+                <label class="form-label">Bu yapımı ne zaman izledin?</label>
+                <input type="date" class="form-input" value="2025-11-20">
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Puanın:</label>
+                <div class="action-btn">
+                    <div class="star-rating" id="modalRating">
+                        <span class="star" data-value="1"></span>
+                        <span class="star" data-value="2"></span>
+                        <span class="star" data-value="3"></span>
+                        <span class="star" data-value="4"></span>
+                        <span class="star" data-value="5"></span>
+                        <span class="star" data-value="6"></span>
+                        <span class="star" data-value="7"></span>
+                        <span class="star" data-value="8"></span>
+                        <span class="star" data-value="9"></span>
+                        <span class="star" data-value="10"></span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">İncelemen / Notların:</label>
+                <textarea class="form-textarea" placeholder="Bu film hakkındaki düşüncelerini paylaş..."></textarea>
+            </div>
+
+            <div class="form-group">
+                <div class="checkbox-group">
+                    <input type="checkbox" id="spoiler">
+                    <label for="spoiler">Spoiler içeriyor</label>
+                </div>
+            </div>
+
+            <div class="modal-actions">
+                <button class="btn-secondary" onclick="closeModal()">İptal</button>
+                <button class="btn-primary" style="flex: 1;" onclick="saveReview()">Kaydet</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- GLOBAL DEĞİŞKENLER ---
+        window.currentProductionId = 1; // Sayfada açık olan film (Varsayılan 1)
+        window.activeProductionId = null; // Modalda işlem yapılan film
+
+        // --- SAYFA YÖNLENDİRME (ROUTING) ---
+        function navigateTo(pageName) {
+            // Sayfaları Gizle/Göster
+            document.querySelectorAll('.page').forEach(page => page.classList.remove('active'));
+            const targetPage = document.getElementById(pageName + '-page');
+            if (targetPage) targetPage.classList.add('active');
+
+            // Dropdown kapat
+            const dropdown = document.getElementById('profileDropdown');
+            if(dropdown) dropdown.classList.remove('active');
+
+            // Verileri Yükle
+            if (pageName === 'feed') loadFeed();
+            else if (pageName === 'lists') loadMyLists();
+            else if (pageName === 'profile') loadProfile();
+        }
+
+        // --- MODAL VE REVIEW İŞLEMLERİ ---
+
+        function openModal(prodId) {
+            // Eğer bir ID gelirse onu kullan, yoksa o an sayfadaki filmi kullan
+            window.activeProductionId = prodId || window.currentProductionId;
+
+            const modal = document.getElementById('reviewModal');
+            modal.classList.add('active');
+
+            // Modalı açarken eski puanları sıfırla
+            const stars = modal.querySelectorAll('.star');
+            stars.forEach(s => s.classList.remove('filled'));
+            document.getElementById('modalRating').dataset.currentRating = "0";
+            document.querySelector('.form-textarea').value = ""; // Texti temizle
+
+            // Modal başlığına film ismini koyabiliriz (Opsiyonel, şimdilik sabit kalsın)
+        }
+
+        function closeModal() {
+            document.getElementById('reviewModal').classList.remove('active');
+        }
+
+        async function saveReview() {
+            // 1. Puanı Modalın içinden al
+            const ratingContainer = document.getElementById('modalRating');
+            // dataset string döner, sayıya çevir
+            const score = parseInt(ratingContainer.dataset.currentRating || 0);
+
+            // 2. Metni al
+            const text = document.querySelector('.form-textarea').value;
+
+            // 3. Kontrol
+            if (score === 0) {
+                alert("Lütfen bir puan verin!");
+                return;
+            }
+
+            const data = {
+                productionId: window.activeProductionId,
+                score: score,
+                text: text
+            };
+
+            try {
+                const response = await fetch('/api/review', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    alert('İnceleme başarıyla kaydedildi!');
+                    closeModal();
+                    // Eğer o an film detay sayfasındaysak yorumları güncelle
+                    if (window.activeProductionId === window.currentProductionId) {
+                        loadProduction(window.currentProductionId);
+                    }
+                } else {
+                    alert('Hata: ' + (result.error || 'Bilinmeyen bir hata oluştu. Giriş yaptınız mı?'));
+                }
+            } catch (error) {
+                console.error('Hata:', error);
+                alert('Sunucu hatası. Lütfen console logu kontrol edin.');
+            }
+        }
+
+        // --- YILDIZ SİSTEMİ (STAR RATING) ---
+        function initializeStarRating(containerId) {
+            const container = document.getElementById(containerId);
+            if (!container) return;
+
+            const stars = container.querySelectorAll('.star');
+
+            // Başlangıç değeri
+            if (!container.dataset.currentRating) {
+                container.dataset.currentRating = "0";
+            }
+
+            stars.forEach((star) => {
+                // Hover Efekti
+                star.addEventListener('mouseenter', function() {
+                    const value = parseInt(this.getAttribute('data-value'));
+                    updateVisuals(stars, value);
+                });
+
+                // Tıklama Efekti
+                star.addEventListener('click', function() {
+                    const value = this.getAttribute('data-value');
+                    container.dataset.currentRating = value;
+                    updateVisuals(stars, parseInt(value));
+                });
+            });
+
+            // Mouse Çekilince (Eski haline dön)
+            container.addEventListener('mouseleave', function() {
+                const saved = parseInt(this.dataset.currentRating || 0);
+                updateVisuals(stars, saved);
+            });
+
+            function updateVisuals(starList, rating) {
+                starList.forEach(s => {
+                    const val = parseInt(s.getAttribute('data-value'));
+                    // Puanı (1-10) kontrol et
+                    if (val <= rating) {
+                        s.classList.add('filled');
+                    } else {
+                        s.classList.remove('filled');
+                    }
+                });
+            }
+        }
+
+        // --- API VERİ ÇEKME İŞLEMLERİ ---
+
+        async function loadProduction(id) {
+            try {
+                const response = await fetch(`/api/production/${id}`);
+                const prod = await response.json();
+
+                if (prod.error) {
+                    console.log("Film bulunamadı");
+                    return;
+                }
+
+                // Global ID'yi güncelle
+                window.currentProductionId = id;
+
+                // DOM Güncelleme
+                document.querySelector('.production-title').textContent = prod.title;
+                document.querySelector('.production-year').textContent = prod.year;
+                document.querySelector('.production-meta span').textContent = prod.director;
+                document.querySelector('.rating-display span:last-child').textContent = `${prod.rating} / 10`;
+                document.querySelector('.plot').textContent = prod.plot;
+
+                // Resimler
+                if(prod.poster) document.querySelector('.poster').src = prod.poster;
+                if(prod.backdrop) document.querySelector('.backdrop').src = prod.backdrop;
+
+                // Alt Verileri Çek
+                loadCast(id);
+                loadReviews(id);
+
+            } catch (error) {
+                console.error('Film detay hatası:', error);
+            }
+        }
+
+        async function loadCast(id) {
+            const response = await fetch(`/api/production/${id}/cast`);
+            const castList = await response.json();
+
+            const grid = document.querySelector('.cast-grid');
+            grid.innerHTML = '';
+
+            castList.forEach(actor => {
+                grid.innerHTML += `
+                    <div class="cast-card">
+                        <div class="cast-image" style="background:#333; display:flex; align-items:center; justify-content:center; color:#777;">
+                            ${actor.name.charAt(0)}
+                        </div>
+                        <div class="cast-name">${actor.name}</div>
+                        <div class="cast-role">Actor</div>
+                    </div>
+                `;
+            });
+        }
+
+        async function loadReviews(id) {
+            const response = await fetch(`/api/production/${id}/reviews`);
+            const reviews = await response.json();
+
+            // 2. Tab (İncelemeler) içeriğini bul
+            const container = document.querySelectorAll('.tab-content')[1];
+            container.innerHTML = '<h2 class="section-title">Son İncelemeler</h2>';
+
+            if (reviews.length === 0) {
+                container.innerHTML += '<p style="color:#888">Henüz inceleme yok.</p>';
+                return;
+            }
+
+            reviews.forEach(r => {
+                // Yıldız sayısını hesapla (Puan / 2)
+                const starCount = Math.round(r.score / 2);
+                const starsStr = '★'.repeat(starCount) + '☆'.repeat(5 - starCount);
+
+                container.innerHTML += `
+                    <div class="review-card">
+                        <div class="review-header">
+                            <div class="review-avatar">${r.author.charAt(0).toUpperCase()}</div>
+                            <div class="review-meta">
+                                <div class="review-author">${r.author}</div>
+                                <div class="review-date">
+                                    <span class="stars" style="color:#FFC107">${starsStr}</span> (${r.score}/10)
+                                </div>
+                            </div>
+                        </div>
+                        <div class="review-text">${r.text}</div>
+                    </div>
+                `;
+            });
+        }
+
+        // --- DİĞER SAYFALAR ---
+        async function loadFeed() {
+            const container = document.getElementById('feed-container');
+            container.innerHTML = 'Yükleniyor...';
+            const res = await fetch('/api/feed');
+            const items = await res.json();
+
+            if(!items.length) { container.innerHTML = 'Akış boş.'; return; }
+
+            let html = '';
+            items.forEach(item => {
+                html += `
+                    <div style="background:#2C343A; padding:15px; margin-bottom:15px; border-radius:8px; display:flex; gap:15px;">
+                        <img src="${item.poster}" style="width:60px; height:90px; object-fit:cover;">
+                        <div>
+                            <div style="color:#bbb; font-size:14px;"><strong>${item.user}</strong> izledi:</div>
+                            <h3 style="color:#fff;">${item.title}</h3>
+                            <div style="color:#FFC107">★ ${item.score}</div>
+                            <p style="color:#ddd; font-size:14px; margin-top:5px;">${item.review}</p>
+                        </div>
+                    </div>
+                `;
+            });
+            container.innerHTML = html;
+        }
+
+        async function loadMyLists() { /* Aynısı kalsın... */ }
+        async function loadProfile() { /* Aynısı kalsın... */ }
+
+        // --- UI EVENTS ---
+        function toggleLike() {
+            const btn = document.getElementById('likeBtn');
+            btn.classList.toggle('active');
+            btn.innerHTML = btn.classList.contains('active') ? '♥ Beğenildi' : '♡ Beğen';
+        }
+
+        function toggleWatchlist() {
+            const btn = document.getElementById('watchlistBtn');
+            btn.classList.toggle('active');
+            btn.innerHTML = btn.classList.contains('active') ? '✓ Listede' : '+ İzleme Listesi';
+        }
+
+        function switchTab(index) {
+            const tabs = document.querySelectorAll('.tab');
+            const contents = document.querySelectorAll('.tab-content');
+            tabs.forEach(t => t.classList.remove('active'));
+            contents.forEach(c => c.classList.remove('active'));
+            tabs[index].classList.add('active');
+            contents[index].classList.add('active');
+        }
+
+        function toggleProfileDropdown() {
+            document.getElementById('profileDropdown').classList.toggle('active');
+        }
+
+        // --- BAŞLATMA (INIT) ---
+        document.addEventListener('DOMContentLoaded', () => {
+            // Yıldız sistemlerini başlat
+            initializeStarRating('userRating');
+            initializeStarRating('modalRating');
+
+            // Varsayılan filmi yükle
+            loadProduction(1);
+
+            // Modal dışına tıklayınca kapat
+            document.getElementById('reviewModal').addEventListener('click', function(e) {
+                if (e.target === this) closeModal();
+            });
+        });
+    </script>
+</body>
+</html>
