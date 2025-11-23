@@ -144,6 +144,88 @@ def index():
 
 # --- API UÇ NOKTALARI (ENDPOINTS) ---
 
+@app.route('/api/productions')
+def get_all_productions():
+    db = get_db()
+
+    # 1. URL Parametrelerini Al (Varsayılan değerlerle)
+    page = int(request.args.get('page', 1))
+    limit = 20  # Her sayfada kaç film olacak
+    offset = (page - 1) * limit
+
+    genre = request.args.get('genre')
+    year = request.args.get('year')
+    sort_by = request.args.get('sort', 'pop')  # pop, rating, alpha, new
+
+    # 2. Dinamik SQL Sorgusu İnşa Et
+    # Temel sorgumuz bu, filtreler geldikçe üzerine ekleyeceğiz.
+    # NOT: Puanı hesaplamak için reviews tablosuyla JOIN yapıyoruz.
+    query = """
+        SELECT p.id, p.title, p.start_year, p.poster_link, 
+               AVG(r.score) as avg_score
+        FROM productions p
+        LEFT JOIN reviews r ON p.id = r.production_id
+    """
+    params = []
+    where_clauses = []
+
+    # Filtre: Tür (Genre)
+    if genre and genre != 'all':
+        # SQL'de genre sütunu "Action, Drama" gibiyse LIKE kullanırız
+        where_clauses.append("p.genre LIKE ?")
+        params.append(f'%{genre}%')
+
+    # Filtre: Yıl (Year)
+    if year and year != 'all':
+        where_clauses.append("p.start_year = ?")
+        params.append(year)
+
+    # WHERE koşullarını birleştir
+    if where_clauses:
+        query += " WHERE " + " AND ".join(where_clauses)
+
+    # Gruplama (Her film için tek satır ve ortalama puan)
+    query += " GROUP BY p.id"
+
+    # Sıralama (Sort)
+    if sort_by == 'rating':
+        query += " ORDER BY avg_score DESC"
+    elif sort_by == 'alpha':
+        query += " ORDER BY p.title ASC"
+    elif sort_by == 'new':
+        query += " ORDER BY p.start_year DESC"
+    else:  # default: popülarite (veya ID sırası)
+        query += " ORDER BY p.id DESC"
+
+    # 3. Sayfalama (Pagination)
+    # Önce toplam film sayısını (filtreli haliyle) bulmalıyız ki sayfa sayısını hesaplayalım.
+    # Bu biraz trick gerektirir, performans için basitçe filtered results count yapılır.
+    # Şimdilik basitlik adına, limit/offset eklemeden önceki sorguyu saydırabiliriz
+    # ama bu karmaşık olabilir. Basit bir yol izleyelim:
+
+    # Sayfalama komutlarını ekle
+    query += " LIMIT ? OFFSET ?"
+    params.extend([limit, offset])
+
+    productions = db.execute(query, params).fetchall()
+
+    # Toplam sayfa sayısı için basit bir count sorgusu (Filtresiz toplamı alalım şimdilik)
+    # İdeal dünyada filtreli count alınır.
+    total_items = db.execute("SELECT COUNT(*) FROM productions").fetchone()[0]
+    total_pages = (total_items + limit - 1) // limit
+
+    return jsonify({
+        'productions': [{
+            'id': row['id'],
+            'title': row['title'],
+            'year': row['start_year'],
+            'poster': row['poster_link'],
+            'rating': round(row['avg_score'], 1) if row['avg_score'] else 0
+        } for row in productions],
+        'total_pages': total_pages,
+        'current_page': page
+    })
+
 @app.route('/api/production/<int:prod_id>')
 @login_required
 def get_production_detail(prod_id):

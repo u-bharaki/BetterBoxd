@@ -597,7 +597,6 @@
             display: inline-flex;
             position: relative;
             font-size: 0;
-            /* gap: 5px;  <-- BU SATIRI SİLDİK, SORUN BUYDU */
             margin-left: -2px; /* Hafif sola çekip hizalar */
         }
 
@@ -670,22 +669,22 @@
     <!-- Production Detail Page -->
     <div id="production-page" class="page active">
         <section class="production-header">
-            <img src="https://image.tmdb.org/t/p/original/s3TBrRGB1iav7gFOCNx3H31MoES.jpg" alt="Backdrop" class="backdrop">
+            <img src="" alt="Backdrop" class="backdrop" style="background:#333;">
 
             <div class="production-info">
-                <img src="https://image.tmdb.org/t/p/w500/ljsZTbVsrQSqZgWeep2B1QiDKuh.jpg" alt="Inception Poster" class="poster">
+                <img src="" alt="Poster" class="poster" style="background:#222;">
 
                 <div class="production-details">
-                    <h1 class="production-title">Inception</h1>
-                    <div class="production-year">2010</div>
+                    <h1 class="production-title">Yükleniyor...</h1>
+                    <div class="production-year">----</div>
 
                     <div class="production-meta">
-                        Yönetmen: <span>Christopher Nolan</span>
+                        Yönetmen: <span>...</span>
                     </div>
 
                     <div class="rating-display">
-                        <span class="stars">★★★★☆</span>
-                        <span>4.2 / 5.0</span>
+                        <span class="stars" style="color:#FFC107"></span>
+                        <span>0.0 / 10.0</span>
                     </div>
 
                     <div class="action-block">
@@ -720,75 +719,17 @@
             </div>
 
             <div class="tab-content active">
-                <div class="plot">
-                    Dom Cobb yetenekli bir hırsızdır. Uzmanlık alanı, zihnin en savunmasız olduğu rüya görme anında, bilinçaltının derinliklerindeki değerli sırları çekip çıkarmak ve onları çalmaktır. Cobb'un bu ender mahareti, onu kurumsal casusluğun tehlikeli yeni dünyasında aranan bir oyuncu yapmıştır. Aynı zamanda bu durum onu uluslararası bir kaçak yapmış ve sevdiği her şeye malolmuştur. Şimdi Cobb'a bir şans verilmiştir. Son bir iş ona hayatını geri kazandırabilir. Ama bunun için imkansız olanı başarması gerekmektedir.
-                </div>
+                <div class="plot">Özet yükleniyor...</div>
 
                 <div class="cast-section">
                     <h2 class="section-title">Oyuncular</h2>
-                    <div class="cast-grid">
-                        <div class="cast-card">
-                            <img src="https://image.tmdb.org/t/p/w185/iNc4kY4Q6CqbqVBYLMLjZIDbnLh.jpg" alt="Leonardo DiCaprio" class="cast-image">
-                            <div class="cast-name">Leonardo DiCaprio</div>
-                            <div class="cast-role">Dom Cobb</div>
-                        </div>
-                        <div class="cast-card">
-                            <img src="https://image.tmdb.org/t/p/w185/rLSUjr725ez1cK7SKVxC9udO03Y.jpg" alt="Marion Cotillard" class="cast-image">
-                            <div class="cast-name">Marion Cotillard</div>
-                            <div class="cast-role">Mal</div>
-                        </div>
-                        <div class="cast-card">
-                            <img src="https://image.tmdb.org/t/p/w185/4D0PpNI0kmP58hgrwGC3wCjxhnm.jpg" alt="Tom Hardy" class="cast-image">
-                            <div class="cast-name">Tom Hardy</div>
-                            <div class="cast-role">Eames</div>
-                        </div>
-                        <div class="cast-card">
-                            <img src="https://image.tmdb.org/t/p/w185/3oWEuo0e8Nx8JvkqYCDec2iMY6K.jpg" alt="Elliot Page" class="cast-image">
-                            <div class="cast-name">Elliot Page</div>
-                            <div class="cast-role">Ariadne</div>
-                        </div>
-                        <div class="cast-card">
-                            <img src="https://image.tmdb.org/t/p/w185/kuSlwTPsVlBMW0cvnFmbZce6PaV.jpg" alt="Joseph Gordon-Levitt" class="cast-image">
-                            <div class="cast-name">Joseph Gordon-Levitt</div>
-                            <div class="cast-role">Arthur</div>
-                        </div>
-                    </div>
+                    <div class="cast-grid"></div>
                 </div>
             </div>
 
             <div class="tab-content">
                 <div class="cast-section">
                     <h2 class="section-title">Son İncelemeler</h2>
-
-                    <div class="review-card">
-                        <div class="review-header">
-                            <div class="review-avatar">M</div>
-                            <div class="review-meta">
-                                <div class="review-author">Mehmet Yılmaz</div>
-                                <div class="review-date">
-                                    <span class="stars">★★★★★</span> • 15 Kasım 2025
-                                </div>
-                            </div>
-                        </div>
-                        <div class="review-text">
-                            Christopher Nolan'ın şaheseri. Akıl oyunları, etkileyici görsellik ve Leonardo DiCaprio'nun muhteşem performansı ile sinema tarihinin unutulmaz filmlerinden biri. Her izleyişte yeni detaylar keşfediyorsunuz. Hans Zimmer'in müziği ise ayrı bir başyapıt.
-                        </div>
-                    </div>
-
-                    <div class="review-card">
-                        <div class="review-header">
-                            <div class="review-avatar">Z</div>
-                            <div class="review-meta">
-                                <div class="review-author">Zeynep Kaya</div>
-                                <div class="review-date">
-                                    <span class="stars">★★★★☆</span> • 10 Kasım 2025
-                                </div>
-                            </div>
-                        </div>
-                        <div class="review-text">
-                            Karmaşık ama bir o kadar da zevkli. İlk izleyişte tam anlamak zor olsa da, tekrar izlediğinizde tüm parçalar yerine oturuyor. Görsel efektler çağını aşmış durumda. Kesinlikle tavsiye ederim.
-                        </div>
-                    </div>
                 </div>
             </div>
 
@@ -796,9 +737,7 @@
                 <div class="cast-section">
                     <h2 class="section-title">Bu Yapımı İçeren Listeler</h2>
                     <div class="page-content">
-                        <p>• En İyi Christopher Nolan Filmleri</p>
-                        <p>• Akıl Oyunları ve Twist Sonlar</p>
-                        <p>• Bilim Kurgu Başyapıtları</p>
+                        <p>Henüz liste yok.</p>
                     </div>
                 </div>
             </div>
@@ -807,9 +746,7 @@
                 <div class="cast-section">
                     <h2 class="section-title">İlgili Yapımlar</h2>
                     <div class="page-content">
-                        <p>• Interstellar (2014)</p>
-                        <p>• The Prestige (2006)</p>
-                        <p>• Shutter Island (2010)</p>
+                        <p>İlgili yapım bulunamadı.</p>
                     </div>
                 </div>
             </div>
@@ -822,7 +759,7 @@
             <h1 class="page-title">Arkadaşların Ne İzliyor?</h1>
             <!-- JS buraya kartları dolduracak -->
             <div id="feed-container" class="grid-container">
-                <p>Yükleniyor...</p>
+                <p style="color:#666">Yükleniyor...</p>
             </div>
         </div>
     </div>
@@ -834,6 +771,59 @@
             <!-- JS buraya listeleri dolduracak -->
             <div id="lists-container" class="lists-grid">
                 <p>Listeler yükleniyor...</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Films Page (Tüm Filmler) -->
+    <div id="films-page" class="page">
+        <div class="simple-page" style="max-width: 1400px;">
+
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:30px;">
+                <h1 class="page-title" style="margin-bottom:0;">Filmler</h1>
+
+                <!-- Filtreleme ve Sıralama Barı -->
+                <div class="filters" style="display:flex; gap:10px;">
+                    <!-- Tür Filtresi -->
+                    <select id="filter-genre" class="form-input" style="width:auto; padding:8px;" onchange="changeFilter()">
+                        <option value="all">Tüm Türler</option>
+                        <option value="Action">Aksiyon</option>
+                        <option value="Drama">Dram</option>
+                        <option value="Sci-Fi">Bilim Kurgu</option>
+                        <option value="Comedy">Komedi</option>
+                        <!-- Diğer türleri buraya ekleyebilirsin -->
+                    </select>
+
+                    <!-- Yıl Filtresi -->
+                    <select id="filter-year" class="form-input" style="width:auto; padding:8px;" onchange="changeFilter()">
+                        <option value="all">Tüm Yıllar</option>
+                        <option value="2025">2025</option>
+                        <option value="2024">2024</option>
+                        <option value="2023">2023</option>
+                        <option value="2010">2010</option>
+                        <!-- Burası JS ile de doldurulabilir -->
+                    </select>
+
+                    <!-- Sıralama -->
+                    <select id="sort-by" class="form-input" style="width:auto; padding:8px;" onchange="changeFilter()">
+                        <option value="pop">Popülerlik</option>
+                        <option value="rating">En Yüksek Puan</option>
+                        <option value="new">En Yeniler</option>
+                        <option value="alpha">A-Z Sıralı</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Filmlerin Listeleneceği Izgara -->
+            <div id="films-grid" class="lists-grid" style="grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));">
+                <!-- JS burayı dolduracak -->
+            </div>
+
+            <!-- Sayfalama Butonları -->
+            <div id="pagination-controls" style="display:flex; justify-content:center; gap:10px; margin-top:40px;">
+                <button class="btn-secondary" onclick="changePage(-1)">« Önceki</button>
+                <span id="page-indicator" style="color:#fff; align-self:center; font-weight:bold;">Sayfa 1</span>
+                <button class="btn-secondary" onclick="changePage(1)">Sonraki »</button>
             </div>
         </div>
     </div>
@@ -946,6 +936,7 @@
             if (pageName === 'feed') loadFeed();
             else if (pageName === 'lists') loadMyLists();
             else if (pageName === 'profile') loadProfile();
+            else if (pageName === 'films') loadAllMovies();
         }
 
         // --- MODAL VE REVIEW İŞLEMLERİ ---
@@ -1095,6 +1086,106 @@
             } catch (error) {
                 console.error('Film detay hatası:', error);
             }
+        }
+
+        // --- FİLMLER SAYFASI LOJİĞİ ---
+
+        let currentFilters = {
+            page: 1,
+            genre: 'all',
+            year: 'all',
+            sort: 'pop'
+        };
+
+        // Sayfa ilk açıldığında veya filtre değiştiğinde çalışır
+        async function loadAllMovies() {
+            const container = document.getElementById('films-grid');
+            const indicator = document.getElementById('page-indicator');
+
+            container.innerHTML = '<p style="color:#888;">Filmler yükleniyor...</p>';
+
+            // URL Parametrelerini Oluştur (örn: /api/productions?page=2&genre=Action&sort=rating)
+            const params = new URLSearchParams({
+                page: currentFilters.page,
+                genre: currentFilters.genre,
+                year: currentFilters.year,
+                sort: currentFilters.sort
+            });
+
+            try {
+                const response = await fetch(`/api/productions?${params}`);
+                const data = await response.json();
+
+                // Grid'i Temizle
+                container.innerHTML = '';
+
+                if (data.productions.length === 0) {
+                    container.innerHTML = '<p>Bu kriterlere uygun film bulunamadı.</p>';
+                    return;
+                }
+
+                // Filmleri Ekrana Bas
+                data.productions.forEach(movie => {
+                    // Poster yoksa varsayılan resim
+                    const poster = movie.poster || 'https://via.placeholder.com/200x300?text=No+Poster';
+
+                    const html = `
+                        <div class="list-card" onclick="loadProduction(${movie.id}); navigateTo('production')" style="padding:0; overflow:hidden; border:none; background:transparent;">
+                            <div style="position:relative;">
+                                <img src="${poster}" style="width:100%; aspect-ratio: 2/3; object-fit:cover; border-radius:8px; border:1px solid #333;">
+                                <div style="position:absolute; top:5px; right:5px; background:rgba(0,0,0,0.8); color:#FFC107; padding:2px 6px; border-radius:4px; font-size:12px; font-weight:bold;">
+                                    ★ ${movie.rating}
+                                </div>
+                            </div>
+                            <div style="padding:10px 0; text-align:left;">
+                                <h4 style="color:#fff; font-size:15px; margin-bottom:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${movie.title}</h4>
+                                <span style="color:#666; font-size:13px;">${movie.year}</span>
+                            </div>
+                        </div>
+                    `;
+                    container.innerHTML += html;
+                });
+
+                // Sayfa Göstergesini Güncelle
+                indicator.textContent = `Sayfa ${data.current_page} / ${data.total_pages}`;
+
+                // Buton durumlarını (ilk/son sayfa) yönetmek istersen burada yapabilirsin
+
+            } catch (error) {
+                console.error('Filmler yüklenirken hata:', error);
+                container.innerHTML = '<p>Yükleme hatası.</p>';
+            }
+        }
+
+        // Filtre değişince (Dropdown'lar tetikler)
+        function changeFilter() {
+            // 1. HTML'den değerleri al
+            currentFilters.genre = document.getElementById('filter-genre').value;
+            currentFilters.year = document.getElementById('filter-year').value;
+            currentFilters.sort = document.getElementById('sort-by').value;
+
+            // 2. Filtre değişince sayfa 1'e dönmeli
+            currentFilters.page = 1;
+
+            // 3. Yeniden yükle
+            loadAllMovies();
+        }
+
+        // Sayfa değişince (Önceki/Sonraki butonları tetikler)
+        function changePage(direction) {
+            // direction: +1 (Sonraki) veya -1 (Önceki)
+            const newPage = currentFilters.page + direction;
+
+            // Sayfa 1'den küçük olamaz
+            if (newPage < 1) return;
+
+            // (Opsiyonel: Toplam sayfayı geçip geçmediğini de kontrol edebilirsin)
+
+            currentFilters.page = newPage;
+            loadAllMovies();
+
+            // Sayfa başına kaydır
+            window.scrollTo({ top: 0, behavior: 'smooth' });
         }
 
         async function loadCast(id) {
