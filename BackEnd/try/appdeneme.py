@@ -2,41 +2,40 @@ from flask import Flask, render_template, g, request, jsonify, session, redirect
 import sqlite3
 import os
 from pathlib import Path
+from typing import Optional
+
+from user_manager import UserManager
 
 app = Flask(__name__)
-app.secret_key = os.urandom(24)  # Güvenli oturum yönetimi için rastgele anahtar
+app.secret_key = os.urandom(24)
 
-# --- AYARLAR ---
-DB_NAME = "movies"  # Veritabanı dosyasının ön eki (movies_2025....db)
+DB_NAME = "movies"
 USERS_TABLE_NAME = "users"
 
+user_manager: Optional[UserManager] = None
 
 def get_db_path():
     """Databases klasöründeki en güncel 'movies_*.db' dosyasını bulur."""
     base_dir = Path(__file__).parent
-    db_dir = base_dir / "databases"  # Senin klasör yapına göre ayarla
+    db_dir = base_dir / "../../Data/databases"
 
-    # Eğer databases klasörü yoksa, scriptin yanına bak
     if not db_dir.is_dir():
         db_dir = base_dir
 
-    # Pattern: movies_*.db
     db_files = list(db_dir.glob(f"{DB_NAME}_*.db"))
 
     if not db_files:
-        # Hiçbir şey bulamazsa manuel bir isim dene (fallback)
         fallback = base_dir / "betterboxd.db"
         if fallback.exists():
             return str(fallback)
         return None
 
-    # En son değiştirilen dosyayı al
     latest_db = max(db_files, key=os.path.getmtime)
     return str(latest_db)
 
 
-# --- VERİTABANI BAĞLANTISI (Context Manager) ---
 def get_db():
+    """Context Manager: Veritabanı bağlantısını g objesinde saklar ve döndürür."""
     db = getattr(g, '_database', None)
     if db is None:
         db_path = get_db_path()
@@ -55,8 +54,6 @@ def close_connection(exception):
         db.close()
 
 
-# --- AUTH DECORATOR ---
-# Giriş yapmamış kullanıcıyı login sayfasına yönlendirmek için
 def login_required(f):
     def wrap(*args, **kwargs):
         if 'user_id' not in session:
@@ -67,7 +64,13 @@ def login_required(f):
     return wrap
 
 
-# --- AUTH ROUTES (Giriş/Kayıt) ---
+
+@app.route('/')
+def index_redirect():
+    if 'user_id' in session:
+        return redirect(url_for('index'))
+    return redirect(url_for('login'))
+
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
@@ -76,15 +79,12 @@ def login():
         username = request.form['username']
         password = request.form['password']
 
-        db = get_db()
-        user = db.execute(f'SELECT * FROM {USERS_TABLE_NAME} WHERE username = ?', (username,)).fetchone()
+        user_data = user_manager.get_user_by_username(username)
 
-        # NOT: Gerçek projede şifreler hash'lenerek saklanmalıdır (örn: werkzeug.security)
-        # Şimdilik düz metin kontrolü yapıyoruz.
-        if user and user['password'] == password:
-            session['user_id'] = user['id']
-            session['username'] = user['username']
-            session['fullname'] = f"{user['first_name']} {user['last_name']}"
+        if user_data and user_manager.check_password(user_data, password):
+            session['user_id'] = user_data['id']
+            session['username'] = user_data['username']
+            session['fullname'] = f"{user_data['first_name']} {user_data['last_name']}"
             return redirect(url_for('index'))
         else:
             error = 'Hatalı kullanıcı adı veya şifre.'
@@ -102,64 +102,42 @@ def register():
         first_name = request.form['first_name']
         last_name = request.form['last_name']
 
-        db = get_db()
-
-        # Kullanıcı var mı kontrol et
-        existing_user = db.execute(f'SELECT id FROM {USERS_TABLE_NAME} WHERE username = ?', (username,)).fetchone()
-
-        if existing_user:
+        if user_manager.get_user_by_username(username):
             error = 'Bu kullanıcı adı zaten alınmış.'
         elif not all([username, password, email, first_name, last_name]):
-            error = 'Lütfen tüm alanları doldurun.'
+            error = 'Tüm alanları doldurun.'
+        elif user_manager.create_user(username, password, email, first_name, last_name):
+            return redirect(url_for('login'))
         else:
-            try:
-                db.execute(f'''
-                    INSERT INTO {USERS_TABLE_NAME} (username, password, email, first_name, last_name)
-                    VALUES (?, ?, ?, ?, ?)
-                ''', (username, password, email, first_name, last_name))
-                db.commit()
-                return redirect(url_for('login'))
-            except Exception as e:
-                error = f'Kayıt sırasında hata oluştu: {str(e)}'
+            error = 'Kayıt işlemi sırasında bir hata oluştu. Lütfen tekrar deneyin.'
 
     return render_template('register.html', error=error)
 
 
 @app.route('/logout')
 def logout():
+    """Kullanıcının oturumunu sonlandırır."""
     session.clear()
     return redirect(url_for('login'))
 
 
-# --- ANA SAYFA (SPA) ---
-
-@app.route('/')
+@app.route('/index')
 @login_required
 def index():
-    """
-    Ana Sayfa: Kullanıcı giriş yapmışsa SPA'yı (index.html) yükler.
-    """
+    """Ana Sayfa: Kullanıcı giriş yapmışsa SPA'yı (index.html) yükler."""
     return render_template('index.html', user=session)
 
-
-# --- API UÇ NOKTALARI (ENDPOINTS) ---
 
 @app.route('/api/productions')
 def get_all_productions():
     db = get_db()
-
-    # 1. URL Parametrelerini Al (Varsayılan değerlerle)
     page = int(request.args.get('page', 1))
-    limit = 20  # Her sayfada kaç film olacak
+    limit = 20
     offset = (page - 1) * limit
-
     genre = request.args.get('genre')
     year = request.args.get('year')
-    sort_by = request.args.get('sort', 'pop')  # pop, rating, alpha, new
+    sort_by = request.args.get('sort', 'pop')
 
-    # 2. Dinamik SQL Sorgusu İnşa Et
-    # Temel sorgumuz bu, filtreler geldikçe üzerine ekleyeceğiz.
-    # NOT: Puanı hesaplamak için reviews tablosuyla JOIN yapıyoruz.
     query = """
         SELECT p.id, p.title, p.start_year, p.poster_link, 
                AVG(r.score) as avg_score
@@ -169,48 +147,33 @@ def get_all_productions():
     params = []
     where_clauses = []
 
-    # Filtre: Tür (Genre)
     if genre and genre != 'all':
-        # SQL'de genre sütunu "Action, Drama" gibiyse LIKE kullanırız
         where_clauses.append("p.genre LIKE ?")
         params.append(f'%{genre}%')
 
-    # Filtre: Yıl (Year)
     if year and year != 'all':
         where_clauses.append("p.start_year = ?")
         params.append(year)
 
-    # WHERE koşullarını birleştir
     if where_clauses:
         query += " WHERE " + " AND ".join(where_clauses)
 
-    # Gruplama (Her film için tek satır ve ortalama puan)
     query += " GROUP BY p.id"
 
-    # Sıralama (Sort)
     if sort_by == 'rating':
         query += " ORDER BY avg_score DESC"
     elif sort_by == 'alpha':
         query += " ORDER BY p.title ASC"
     elif sort_by == 'new':
         query += " ORDER BY p.start_year DESC"
-    else:  # default: popülarite (veya ID sırası)
+    else:
         query += " ORDER BY p.id DESC"
 
-    # 3. Sayfalama (Pagination)
-    # Önce toplam film sayısını (filtreli haliyle) bulmalıyız ki sayfa sayısını hesaplayalım.
-    # Bu biraz trick gerektirir, performans için basitçe filtered results count yapılır.
-    # Şimdilik basitlik adına, limit/offset eklemeden önceki sorguyu saydırabiliriz
-    # ama bu karmaşık olabilir. Basit bir yol izleyelim:
-
-    # Sayfalama komutlarını ekle
     query += " LIMIT ? OFFSET ?"
     params.extend([limit, offset])
 
     productions = db.execute(query, params).fetchall()
 
-    # Toplam sayfa sayısı için basit bir count sorgusu (Filtresiz toplamı alalım şimdilik)
-    # İdeal dünyada filtreli count alınır.
     total_items = db.execute("SELECT COUNT(*) FROM productions").fetchone()[0]
     total_pages = (total_items + limit - 1) // limit
 
@@ -245,7 +208,6 @@ def get_production_detail(prod_id):
         FROM reviews WHERE production_id = ?
     ''', (prod_id,)).fetchone()
 
-    # Puanı 10 üzerinden hesapla ve yuvarla
     avg_rating = round(rating_data['average'], 1) if rating_data['average'] else 0
 
     response = {
@@ -316,12 +278,9 @@ def get_profile():
     user = db.execute(f'SELECT * FROM {USERS_TABLE_NAME} WHERE id = ?', (current_user_id,)).fetchone()
     total_watched = db.execute('SELECT COUNT(*) FROM reviews WHERE user_id = ?', (current_user_id,)).fetchone()[0]
 
-    # (İsteğe bağlı) Takipçi sayıları için 'follows' tablosu varsa:
     try:
-        followers = \
-        db.execute('SELECT COUNT(*) FROM follows WHERE followed_user_id = ?', (current_user_id,)).fetchone()[0]
-        following = \
-        db.execute('SELECT COUNT(*) FROM follows WHERE follower_user_id = ?', (current_user_id,)).fetchone()[0]
+        followers = db.execute('SELECT COUNT(*) FROM follows WHERE followed_user_id = ?', (current_user_id,)).fetchone()[0]
+        following = db.execute('SELECT COUNT(*) FROM follows WHERE follower_user_id = ?', (current_user_id,)).fetchone()[0]
     except:
         followers = 0
         following = 0
@@ -345,7 +304,6 @@ def add_review():
     current_user_id = session['user_id']
 
     try:
-        # score artık 1 ile 10 arasında geliyor
         db.execute('''
             INSERT INTO reviews (user_id, production_id, score, context)
             VALUES (?, ?, ?, ?)
@@ -358,8 +316,15 @@ def add_review():
 
 if __name__ == '__main__':
     path = get_db_path()
+
     if path:
         print(f"[INFO] Veritabanı bulundu: {path}")
-        app.run(debug=True)
+
+        try:
+            user_manager = UserManager(db_path=path, users_table_name=USERS_TABLE_NAME)
+            app.run(debug=True)
+        except Exception as e:
+            print(f"Uygulama başlatılamadı veya UserManager kurulumunda hata: {e}")
+
     else:
-        print("[HATA] Veritabanı dosyası bulunamadı! Lütfen 'movies_*.db' dosyasını kontrol et.")
+        print("Veritabanı dosyası bulunamadı!")

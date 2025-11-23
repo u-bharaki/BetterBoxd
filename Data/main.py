@@ -1,7 +1,6 @@
 from datetime import datetime
 from pathlib import Path
 
-
 import requests
 import pandas as pd
 import sqlite3
@@ -9,7 +8,7 @@ import time
 import sys
 
 API_KEYS_FILE = "api_keys.txt"
-SAVE_FILE = "save"
+SAVE_FILE = "savedene"
 LAST_SAVE_FILE = ""
 NEW_SAVE_FILE = ""
 LOG_FILE = ""
@@ -382,7 +381,7 @@ def create_tables(cursor):
         rated TEXT,
         runtime INTEGER,
         type TEXT CHECK(type IN ('movie', 'series')),
-        added_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+        added_at TIMESTAMP NOT NULL DEFAULT (datetime('now', '+3 hour'))
     )
     """)
 
@@ -405,8 +404,8 @@ def create_tables(cursor):
         email TEXT NOT NULL,
         first_name TEXT NOT NULL,
         last_name TEXT NOT NULL,
-        last_login TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-        created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+        last_login TIMESTAMP NOT NULL DEFAULT (datetime('now', '+3 hour')),
+        created_at TIMESTAMP NOT NULL DEFAULT (datetime('now', '+3 hour'))
     )
     """)
 
@@ -414,7 +413,7 @@ def create_tables(cursor):
     CREATE TABLE IF NOT EXISTS {FOLLOWS_TABLE_NAME} (
         follower_user_id INTEGER NOT NULL,
         followed_user_id INTEGER NOT NULL,
-        followed_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        followed_at TIMESTAMP NOT NULL DEFAULT (datetime('now', '+3 hour')),
         
         CONSTRAINT fk_follower_user_id FOREIGN KEY (follower_user_id) REFERENCES {USERS_TABLE_NAME}(id) ON DELETE CASCADE,
         CONSTRAINT fk_followed_user_id FOREIGN KEY (followed_user_id) REFERENCES {USERS_TABLE_NAME}(id) ON DELETE CASCADE    
