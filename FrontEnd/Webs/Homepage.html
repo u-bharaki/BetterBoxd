@@ -1,0 +1,795 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>BetterBoxd</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<style>
+    body {
+        margin: 0;
+        font-family: Arial, sans-serif;
+        background-color: #0d0d0d;
+        color: #fff;
+    }
+
+    /* NAVBAR --------------------------------------------------------------------------------------------------------------------------- */
+    .navbar {
+        width: 100%;
+        height: 70px;
+        background-color: #111;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0 40px;
+        box-sizing: border-box;
+        border-bottom: 1px solid #222;
+        position: relative;
+    }
+
+    .logo {
+        font-size: 28px;
+        font-weight: bold;
+        color: #00cc66;
+        cursor: pointer;
+        text-decoration: none;
+    }
+
+    /* NAV LEFT AREA */
+    .nav-left {
+        display: flex;
+        align-items: center;
+        gap: 30px;
+    }
+
+    .nav-center {
+        flex: 1;
+        display: flex;
+        justify-content: center;
+    }
+
+    .nav-right {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+    }
+
+    .nav-btn {
+        background: none;
+        border: none;
+        color: #eee;
+        font-size: 16px;
+        cursor: pointer;
+        transition: 0.2s;
+    }
+
+    .nav-btn:hover {
+        color: #00cc66;
+    }
+
+    /* SEARCH ------------------------------------------------------------------------------------------------------------------------------------------ */
+    .search-container {
+        flex: 1;
+        display: flex;
+        justify-content: center;
+    }
+
+    .search-input {
+        width: 420px;
+        padding: 10px 15px;
+        font-size: 16px;
+        background-color: #1a1a1a;
+        border: 1px solid #333;
+        color: white;
+        border-radius: 5px;
+        outline: none;
+        transition: 0.2s;
+    }
+
+    .search-input:focus {
+        border-color: #00cc66;
+    }
+
+    /* USER BTN ------------------------------------------------------------------------------------------------------------------- */
+    .user-btn {
+        font-size: 16px;
+        background-color: #1a1a1a;
+        padding: 10px 15px;
+        border: 1px solid #333;
+        border-radius: 5px;
+        cursor: pointer;
+        transition: 0.2s;
+    }
+
+    .user-btn:hover {
+        border-color: #00cc66;
+        color: #00cc66;
+    }
+
+    /* DROPDOWN ---------------------------------------------------------------------------------------------------------------------- */
+    .dropdown {
+        position: relative;
+    }
+
+    .dropdown-menu {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        background-color: #141414;
+        width: 180px;
+        border: 1px solid #333;
+        border-top: none;
+        overflow: hidden;
+        max-height: 0;
+        transition: max-height 0.3s ease;
+        z-index: 20;
+    }
+
+    .dropdown-item {
+        padding: 12px 15px;
+        cursor: pointer;
+        border-bottom: 1px solid #222;
+        transition: 0.2s;
+    }
+
+    .dropdown-item:hover {
+        background-color: #1f1f1f;
+        color: #00cc66;
+    }
+
+    /* POPUP -------------------------------------------------------------------------------------------------------------------------- */
+    .popup-backdrop {
+        display: none;
+        position: fixed;
+        top: 0; left: 0;
+        width: 100%; height: 100%;
+        background-color: rgba(0,0,0,0.7);
+        justify-content: center;
+        align-items: center;
+        animation: fadeIn 0.25s;
+    }
+
+    @keyframes fadeIn {
+        from { opacity: 0; }
+        to   { opacity: 1; }
+    }
+
+    .popup-box {
+        background-color: #141414;
+        width: 350px;
+        padding: 25px;
+        border-radius: 8px;
+        border: 1px solid #333;
+        animation: slideDown 0.3s ease;
+    }
+
+    @keyframes slideDown {
+        from { transform: translateY(-20px); opacity: 0; }
+        to   { transform: translateY(0); opacity: 1; }
+    }
+
+    .popup-title {
+        font-size: 22px;
+        margin-bottom: 15px;
+        text-align: center;
+    }
+
+    .popup-input {
+        width: 100%;
+        padding: 10px;
+        margin: 8px 0;
+        background-color: #1d1d1d;
+        border: 1px solid #333;
+        border-radius: 5px;
+        color: white;
+    }
+
+    .popup-btn {
+        width: 100%;
+        padding: 10px;
+        background-color: #00cc66;
+        border: none;
+        font-size: 16px;
+        border-radius: 5px;
+        cursor: pointer;
+        margin-top: 10px;
+        color: black;
+    }
+
+    .popup-btn:hover {
+        background-color: #00e673;
+    }
+
+    .close-popup {
+        text-align: center;
+        margin-top: 10px;
+        color: #aaa;
+        cursor: pointer;
+        font-size: 14px;
+    }
+
+    .close-popup:hover {
+        color: #fff;
+    }
+
+    /*Main page body----------------------------------------------------------------------------------------------------- */
+
+    /* SECTION TITLE */
+    .section-title {
+        font-size: 24px;
+        margin: 40px 0 15px 40px;
+        font-weight: bold;
+    }
+
+    /* WRAPPER */
+    .slider-wrapper {
+        position: relative;
+        margin: 0 auto;
+        width: (8 * 35px + 7 * 35px + 245px);
+        padding: 0 20px;
+    }
+
+    .poster-row {
+    display: flex;
+    gap: 35px;
+    overflow: hidden;
+    scroll-behavior: smooth;
+    width: 100%;
+}
+
+    .poster-card {
+        width: 170px;
+        height: 260px;
+        border-radius: 10px;
+        overflow: hidden;
+        cursor: pointer;
+        flex-shrink: 0;
+        transition: transform 0.2s;
+    }
+
+    .poster-card img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    /* HOVER EFFECT */
+    .poster-card:hover {
+        transform: scale(1.06);
+        box-shadow: 0px 0px 25px rgba(0, 255, 130, 0.25);
+    }
+
+    /* ARROWS */
+    .arrow-btn {
+        position: absolute;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 45px;
+        height: 100px;
+        background: rgba(255,255,255,0.12);
+        backdrop-filter: blur(4px);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 32px;
+        color: white;
+        cursor: pointer;
+        border-radius: 5px;
+        z-index: 9999;   
+        opacity: 0;
+        transition: opacity 0.25s;
+        pointer-events: auto;
+    }
+
+    .slider-wrapper:hover .arrow-btn {
+        opacity: 1;
+        pointer-events: auto
+    }
+
+    .arrow-left {
+        left: 10px;
+        display: flex;
+    }
+
+    .arrow-right {
+        right: 10px;
+        display: flex;
+    }
+
+    .arrow-btn:hover {
+        background-color: rgba(255,255,255,0.2);
+    }
+
+    /*FOOTER SEGMENT-------------------------------------------------------------*/
+    .footer {
+    width: 100%;
+    background-color: #1e2530;
+    padding: 40px 0;
+    text-align: center;
+    margin-top: 80px;
+}
+
+    .footer-links {
+        margin-bottom: 10px;
+    }
+
+    .footer-links a {
+        color: #b0b9c5;
+        margin: 0 15px;
+        text-decoration: none;
+        font-size: 15px;
+        transition: color 0.2s;
+    }
+
+    .footer-links a:hover {
+        color: #ffffff;
+    }
+
+    .footer-copy {
+        color: #8a93a0;
+        font-size: 14px;
+    }
+
+
+
+</style>
+</head>
+
+<body>
+
+<!-- NAVBAR -->
+<div class="navbar">
+
+    <!-- LEFT AREA -->
+    <div class="nav-left">
+        <a class="logo" onclick="window.location.href='index.html'">BetterBoxd</a>
+
+        <div class="dropdown">
+            <button class="nav-btn" onclick="toggleMenu('filmsMenu')">Films ▼</button>
+            <div id="filmsMenu" class="dropdown-menu">
+                <div class="dropdown-item">Comedy</div>
+                <div class="dropdown-item">Horror</div>
+                <div class="dropdown-item">Thriller</div>
+                <div class="dropdown-item">Action</div>
+            </div>
+        </div>
+
+        <div class="dropdown">
+            <button class="nav-btn" onclick="toggleMenu('seriesMenu')">Series ▼</button>
+            <div id="seriesMenu" class="dropdown-menu">
+                <div class="dropdown-item">Comedy</div>
+                <div class="dropdown-item">Horror</div>
+                <div class="dropdown-item">Thriller</div>
+                <div class="dropdown-item">Action</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- CENTER AREA (SEARCH BAR) -->
+    <div class="nav-center">
+        <input type="text" class="search-input" placeholder="Search movies...">
+    </div>
+
+    <!-- RIGHT AREA (NEW BUTTONS) -->
+    <div class="nav-right">
+        <button class="user-btn">My Lists</button>
+        <button class="user-btn">Profile</button>
+        <button class="user-btn" onclick="openPopup()">Login</button>
+    </div>
+
+</div>
+
+<!-- TOP RATED FILMS -->
+<div class="section-title">Top Rated Films</div>
+<div class="slider-wrapper" id="films-wrapper">
+    
+    <div class="arrow-btn arrow-left" onclick="slideLeft('filmsRow')">❮</div>
+    <div class="arrow-btn arrow-right" onclick="slideRight('filmsRow')">❯</div>
+
+    <div id="filmsRow" class="poster-row">
+
+        <!-- 20 film örneği -->
+        <div class="poster-card" onclick="window.location='films/1.html'"><img src="https://image.tmdb.org/t/p/w500/6oH378KUfCEitzJkm07r97L0RsZ.jpg"></div>
+        <div class="poster-card" onclick="window.location='films/2.html'"><img src="https://image.tmdb.org/t/p/w500/9eAn20y26wtB3aet7w9lHjuSgZ3.jpg"></div>
+        <div class="poster-card" onclick="window.location='films/3.html'"><img src="https://image.tmdb.org/t/p/w500/jziO1LjnxkbZ3MZ37WXeqc5XkFe.jpg"></div>
+        <div class="poster-card" onclick="window.location='films/4.html'"><img src="https://image.tmdb.org/t/p/w500/kqjL17yufvn9OVLyXYpvtyrFfak.jpg"></div>
+        <div class="poster-card" onclick="window.location='films/5.html'"><img src="https://image.tmdb.org/t/p/w500/nlCHUWjY9XWbuEUQauCBgnY8ymF.jpg"></div>
+        <div class="poster-card" onclick="window.location='films/6.html'"><img src="https://image.tmdb.org/t/p/w500/4Y9yiFkEyLZDWz2JRizoHfRtAfd.jpg"></div>
+        <div class="poster-card" onclick="window.location='films/7.html'"><img src="https://image.tmdb.org/t/p/w500/fpuorQUi8I5jBqFa9UcRgxNfHKt.jpg"></div>
+        <div class="poster-card" onclick="window.location='films/8.html'"><img src="https://image.tmdb.org/t/p/w500/efhGu43lrmPubgnqESG2VRx3W1C.jpg"></div>
+        <div class="poster-card" onclick="window.location='films/9.html'"><img src="https://image.tmdb.org/t/p/w500/dcB8ZDzsnJrFFg2ft7N6p7cWJ3O.jpg"></div>
+        <div class="poster-card" onclick="window.location='films/10.html'"><img src="https://image.tmdb.org/t/p/w500/lAXONuqg41NwUMuzMiFvicDET9Y.jpg"></div>
+
+        <div class="poster-card" onclick="window.location='films/11.html'"><img src="https://image.tmdb.org/t/p/w500/vVpEOvdxVBP2aV166j5Xlvb5Cdc.jpg"></div>
+        <div class="poster-card" onclick="window.location='films/12.html'"><img src="https://image.tmdb.org/t/p/w500/xBKGJQsAIeweesB79KC89FpBrVr.jpg"></div>
+        <div class="poster-card" onclick="window.location='films/13.html'"><img src="https://image.tmdb.org/t/p/w500/tCvjzJMK9yzSxKQzAU6n2hFBiUY.jpg"></div>
+        <div class="poster-card" onclick="window.location='films/14.html'"><img src="https://image.tmdb.org/t/p/w500/vUHkZXtKMjjH4BQSb66A1Vp5wDC.jpg"></div>
+        <div class="poster-card" onclick="window.location='films/15.html'"><img src="https://image.tmdb.org/t/p/w500/4Iu5f2nv7huqvuYkmZvSg0sFQX7.jpg"></div>
+        <div class="poster-card" onclick="window.location='films/16.html'"><img src="https://image.tmdb.org/t/p/w500/dFB6TUUHcOwN35z2nzKQ2dEU17f.jpg"></div>
+        <div class="poster-card" onclick="window.location='films/17.html'"><img src="https://image.tmdb.org/t/p/w500/a.jpg"></div>
+        <div class="poster-card" onclick="window.location='films/18.html'"><img src="https://image.tmdb.org/t/p/w500/fudEG1VUWuOqleXv6N6pE3Dy1Yh.jpg"></div>
+        <div class="poster-card" onclick="window.location='films/19.html'"><img src="https://image.tmdb.org/t/p/w500/oAQqFfG9S84oB9dCzQG2SkJ0UK.jpg"></div>
+        <div class="poster-card" onclick="window.location='films/20.html'"><img src="https://image.tmdb.org/t/p/w500/3IGbjc5ZC5yxim5W0sFING2kdcz.jpg"></div>
+
+    </div>
+</div>
+
+
+<!-- TOP RATED SERIES -->
+<div class="section-title">Top Rated Series</div>
+<div class="slider-wrapper" id="series-wrapper">
+    
+    <div class="arrow-btn arrow-left" onclick="slideLeft('seriesRow')">❮</div>
+    <div class="arrow-btn arrow-right" onclick="slideRight('seriesRow')">❯</div>
+
+    <div id="seriesRow" class="poster-row">
+
+        <!-- 20 dizi örneği -->
+        <div class="poster-card" onclick="window.location='series/1.html'"><img src="https://image.tmdb.org/t/p/w500/ggFHVNu6YYI5L9pCfOacjizRGt.jpg"></div>
+        <div class="poster-card" onclick="window.location='series/2.html'"><img src="https://image.tmdb.org/t/p/w500/apbrbWs8M9lyOpJYU5WXrpFbk1Z.jpg"></div>
+        <div class="poster-card" onclick="window.location='series/3.html'"><img src="https://image.tmdb.org/t/p/w500/stTEycfG9928HYGEISBFaG1ngjM.jpg"></div>
+        <div class="poster-card" onclick="window.location='series/4.html'"><img src="https://image.tmdb.org/t/p/w500/xEDadlqirnDTM4eTJWcAfWv5xwe.jpg"></div>
+        <div class="poster-card" onclick="window.location='series/5.html'"><img src="https://image.tmdb.org/t/p/w500/e5ZpLJXNc3HDXxl9BVqKCDLRe3s.jpg"></div>
+
+        <div class="poster-card" onclick="window.location='series/6.html'"><img src="https://image.tmdb.org/t/p/w500/dW4up157qbMK5eM7dLxQJjurQZB.jpg"></div>
+        <div class="poster-card" onclick="window.location='series/7.html'"><img src="https://image.tmdb.org/t/p/w500/dDJgndxjYHqZW1c3FUTv7YMva9y.jpg"></div>
+        <div class="poster-card" onclick="window.location='series/8.html'"><img src="https://image.tmdb.org/t/p/w500/2WCI1KMkOYVok3A7EzcTI5jDY2G.jpg"></div>
+        <div class="poster-card" onclick="window.location='series/9.html'"><img src="https://image.tmdb.org/t/p/w500/93lFl2dxUWZ2Cs5BVGzbqH51Vx5.jpg"></div>
+        <div class="poster-card" onclick="window.location='series/10.html'"><img src="https://image.tmdb.org/t/p/w500/qeCBqA3zgRrHg5SroBpZndBzVwr.jpg"></div>
+
+        <div class="poster-card" onclick="window.location='series/11.html'"><img src="https://image.tmdb.org/t/p/w500/pj1YZ5xGXIkYeliYg5OtVcxlYkG.jpg"></div>
+        <div class="poster-card" onclick="window.location='series/12.html'"><img src="https://image.tmdb.org/t/p/w500/9Qs9oyn4iE8QtQ2UKeDvvkMNxCD.jpg"></div>
+        <div class="poster-card" onclick="window.location='series/13.html'"><img src="https://image.tmdb.org/t/p/w500/5YcPz9vywgqbiZ9erjRKCpzp4Hv.jpg"></div>
+        <div class="poster-card" onclick="window.location='series/14.html'"><img src="https://image.tmdb.org/t/p/w500/7sPmAIbZwTKgw7KyRjnm1ZZg74g.jpg"></div>
+        <div class="poster-card" onclick="window.location='series/15.html'"><img src="https://image.tmdb.org/t/p/w500/6qj7oYQFMWzMEkejfDGg5Ry5MGw.jpg"></div>
+
+        <div class="poster-card" onclick="window.location='series/16.html'"><img src="https://image.tmdb.org/t/p/w500/fwY4nzbIRhqwJUXN2YycS14O6RE.jpg"></div>
+        <div class="poster-card" onclick="window.location='series/17.html'"><img src="https://image.tmdb.org/t/p/w500/yeV2SHqOH2uE2FdKbMuMiXrTzuh.jpg"></div>
+        <div class="poster-card" onclick="window.location='series/18.html'"><img src="https://image.tmdb.org/t/p/w500/bffP2IbBvtZ1VxukUcRojpVpUoD.jpg"></div>
+        <div class="poster-card" onclick="window.location='series/19.html'"><img src="https://image.tmdb.org/t/p/w500/sZUiXcCbndjfv4uYvRdhZGbPHJT.jpg"></div>
+        <div class="poster-card" onclick="window.location='series/20.html'"><img src="https://image.tmdb.org/t/p/w500/5YiJJoYIjdplEC5YMWiZpUMiq.jpg"></div>
+
+    </div>
+</div>
+
+<!-- AWARD-WINNING FILMS-->
+<div class="section-title">Award-Winning Films</div>
+<div class="slider-wrapper">
+    <div class="arrow-btn arrow-left" onclick="slideLeft('awFilms')">❮</div>
+    <div class="arrow-btn arrow-right" onclick="slideRight('awFilms')">❯</div>
+
+    <div id="awFilms" class="poster-row">
+
+        <div class="poster-card"><img src="https://image.tmdb.org/t/p/w500/pU3bnutJU91u3b4IeRPQTOP8jhV.jpg"></div>
+        <div class="poster-card"><img src="https://image.tmdb.org/t/p/w500/uLkFPGKcW9VJxSgXbSOwYwjdYkp.jpg"></div>
+        <div class="poster-card"><img src="https://image.tmdb.org/t/p/w500/dMveLfUtwNfC0U5cLwQmt2k85rI.jpg"></div>
+        <div class="poster-card"><img src="https://image.tmdb.org/t/p/w500/c6H7Z4u73ir3cIoCteuhJh7UCAR.jpg"></div>
+        <div class="poster-card"><img src="https://image.tmdb.org/t/p/w500/udDclJoHjfjb8Ekgsd4FDteOkCU.jpg"></div>
+
+        <div class="poster-card"><img src="https://image.tmdb.org/t/p/w500/1w7f4dZBIUe1fi6WfPWRoRDt4rX.jpg"></div>
+        <div class="poster-card"><img src="https://image.tmdb.org/t/p/w500/hRmH7D2oZQXXcV6tKqSMefn7CeH.jpg"></div>
+        <div class="poster-card"><img src="https://image.tmdb.org/t/p/w500/zsM1Ckp2KgkkU5jGfEFEx8Z7nRI.jpg"></div>
+        <div class="poster-card"><img src="https://image.tmdb.org/t/p/w500/1Il4zJaiO4n0ZnvO2dt9k6S0FnC.jpg"></div>
+        <div class="poster-card"><img src="https://image.tmdb.org/t/p/w500/tcKBcYrNQIo12G1bQd6rGQJrC35.jpg"></div>
+
+        <div class="poster-card"><img src="https://image.tmdb.org/t/p/w500/7WsyChQLEftFiDOVTGkv3hFpyyt.jpg"></div>
+        <div class="poster-card"><img src="https://image.tmdb.org/t/p/w500/nHXiMnWUAUba2LZ0dFkNDVdvJ1o.jpg"></div>
+        <div class="poster-card"><img src="https://image.tmdb.org/t/p/w500/aKuFiU82s5ISJpGZp7YkIr3kCUd.jpg"></div>
+        <div class="poster-card"><img src="https://image.tmdb.org/t/p/w500/cvx3b8XSpBvUQQoaxhS1dF4eDdc.jpg"></div>
+        <div class="poster-card"><img src="https://image.tmdb.org/t/p/w500/xBKGJQsAIeweesB79KC89FpBrVr.jpg"></div>
+
+        <div class="poster-card"><img src="https://image.tmdb.org/t/p/w500/waoFZkhjJZQSfA3ZW3Zu8H8hBsA.jpg"></div>
+        <div class="poster-card"><img src="https://image.tmdb.org/t/p/w500/8uYIjv7NR07QqMvBYrNfoYk5TiF.jpg"></div>
+        <div class="poster-card"><img src="https://image.tmdb.org/t/p/w500/zrI61pFJbREhQ9GgO3x0GfA0gGn.jpg"></div>
+        <div class="poster-card"><img src="https://image.tmdb.org/t/p/w500/srv5jh7jqCOxybQd1vUDbaP8N2T.jpg"></div>
+        <div class="poster-card"><img src="https://image.tmdb.org/t/p/w500/q719jXXEzOoYaps6babgKnONONX.jpg"></div>
+
+    </div>
+</div>
+
+<!-- AWARD-WINNING SERIES-->
+<div class="section-title">Award-Winning Series</div>
+<div class="slider-wrapper">
+
+    <div class="arrow-btn arrow-left" onclick="slideLeft('awardSeriesRow')">❮</div>
+    <div class="arrow-btn arrow-right" onclick="slideRight('awardSeriesRow')">❯</div>
+
+    <div id="awardSeriesRow" class="poster-row">
+        <!-- 20 posters -->
+        <div class="poster-card"><img src="https://image.tmdb.org/t/p/w500/ggFHVNu6YYI5L9pCfOacjizRGt.jpg"></div>
+        <div class="poster-card"><img src="https://image.tmdb.org/t/p/w500/apbrbWs8M9lyOpJYU5WXrpFbk1Z.jpg"></div>
+        <div class="poster-card"><img src="https://image.tmdb.org/t/p/w500/stTEycfG9928HYGEISBFaG1ngjM.jpg"></div>
+        <div class="poster-card"><img src="https://image.tmdb.org/t/p/w500/xEDadlqirnDTM4eTJWcAfWv5xwe.jpg"></div>
+        <div class="poster-card"><img src="https://image.tmdb.org/t/p/w500/e5ZpLJXNc3HDXxl9BVqKCDLRe3s.jpg"></div>
+
+        <div class="poster-card"><img src="https://image.tmdb.org/t/p/w500/93lFl2dxUWZ2Cs5BVGzbqH51Vx5.jpg"></div>
+        <div class="poster-card"><img src="https://image.tmdb.org/t/p/w500/qeCBqA3zgRrHg5SroBpZndBzVwr.jpg"></div>
+        <div class="poster-card"><img src="https://image.tmdb.org/t/p/w500/pj1YZ5xGXIkYeliYg5OtVcxlYkG.jpg"></div>
+        <div class="poster-card"><img src="https://image.tmdb.org/t/p/w500/9Qs9oyn4iE8QtQ2UKeDvvkMNxCD.jpg"></div>
+        <div class="poster-card"><img src="https://image.tmdb.org/t/p/w500/fwY4nzbIRhqwJUXN2YycS14O6RE.jpg"></div>
+
+        <div class="poster-card"><img src="https://image.tmdb.org/t/p/w500/yeV2SHqOH2uE2FdKbMuMiXrTzuh.jpg"></div>
+        <div class="poster-card"><img src="https://image.tmdb.org/t/p/w500/bffP2IbBvtZ1VxukUcRojpVpUoD.jpg"></div>
+        <div class="poster-card"><img src="https://image.tmdb.org/t/p/w500/sZUiXcCbndjfv4uYvRdhZGbPHJT.jpg"></div>
+        <div class="poster-card"><img src="https://image.tmdb.org/t/p/w500/4boSEsolElX2h0bK3BtUreRIBME.jpg"></div>
+        <div class="poster-card"><img src="https://image.tmdb.org/t/p/w500/s3TBrRGB1iav7gFOCNx3H31MoES.jpg"></div>
+
+        <div class="poster-card"><img src="https://image.tmdb.org/t/p/w500/mcUx0tln3GkNenTsa3DHHF7Zt2w.jpg"></div>
+        <div class="poster-card"><img src="https://image.tmdb.org/t/p/w500/hmEo2L0N7LxyzKDn5i7xLmh3JIZ.jpg"></div>
+        <div class="poster-card"><img src="https://image.tmdb.org/t/p/w500/jf3YO8hOqGHCupsREffUO87s2Z1.jpg"></div>
+        <div class="poster-card"><img src="https://image.tmdb.org/t/p/w500/iqmuCPfO4MHDLecxB2S98RMyCVd.jpg"></div>
+    </div>
+
+</div>
+
+
+<!-- DOCUMENTARIES-->
+<div class="section-title">Documentaries</div>
+<div class="slider-wrapper">
+    <div class="arrow-btn arrow-left" onclick="slideLeft('docs')">❮</div>
+    <div class="arrow-btn arrow-right" onclick="slideRight('docs')">❯</div>
+
+    <div id="docs" class="poster-row">
+
+        <div class="poster-card"><img src="https://image.tmdb.org/t/p/w500/8mRgpubxHqnqvENK4Bei30xMDvy.jpg"></div>
+        <div class="poster-card"><img src="https://image.tmdb.org/t/p/w500/mxCnO7IRVVS38qPWi6jBLL8GMDY.jpg"></div>
+        <div class="poster-card"><img src="https://image.tmdb.org/t/p/w500/wagy07Zdv3YBoTRwJkCjGPIuCUP.jpg"></div>
+        <div class="poster-card"><img src="https://image.tmdb.org/t/p/w500/r7sQ1hzR7JLZ1MjDJg9f3VuZ2BU.jpg"></div>
+        <div class="poster-card"><img src="https://image.tmdb.org/t/p/w500/qVgugCMVvwB2eYZFIuJuIV9J8hk.jpg"></div>
+
+        <div class="poster-card"><img src="https://image.tmdb.org/t/p/w500/y7Co8yZYK0yhl725LLANkKJZhzu.jpg"></div>
+        <div class="poster-card"><img src="https://image.tmdb.org/t/p/w500/hBxwxYBYU1CyGjsEDaZ1QZ1ItVd.jpg"></div>
+        <div class="poster-card"><img src="https://image.tmdb.org/t/p/w500/bTT2sFePqLNPXqswNypt5x1y0bS.jpg"></div>
+        <div class="poster-card"><img src="https://image.tmdb.org/t/p/w500/oYXACXyTPlB8SE17zTFXYRYH0D1.jpg"></div>
+        <div class="poster-card"><img src="https://image.tmdb.org/t/p/w500/8ZLxETrioVyWvTmPFDslnuWu9yi.jpg"></div>
+
+        <div class="poster-card"><img src="https://image.tmdb.org/t/p/w500/kqjL17yufvn9OVLyXYpvtyrFfak.jpg"></div>
+        <div class="poster-card"><img src="https://image.tmdb.org/t/p/w500/dFB6TUUHcOwN35z2nzKQ2dEU17f.jpg"></div>
+        <div class="poster-card"><img src="https://image.tmdb.org/t/p/w500/oAQqFfG9S84oB9dCzQG2SkJ0UK.jpg"></div>
+        <div class="poster-card"><img src="https://image.tmdb.org/t/p/w500/4Y9yiFkEyLZDWz2JRizoHfRtAfd.jpg"></div>
+        <div class="poster-card"><img src="https://image.tmdb.org/t/p/w500/fpuorQUi8I5jBqFa9UcRgxNfHKt.jpg"></div>
+
+        <div class="poster-card"><img src="https://image.tmdb.org/t/p/w500/efhGu43lrmPubgnqESG2VRx3W1C.jpg"></div>
+        <div class="poster-card"><img src="https://image.tmdb.org/t/p/w500/lAXONuqg41NwUMuzMiFvicDET9Y.jpg"></div>
+        <div class="poster-card"><img src="https://image.tmdb.org/t/p/w500/dcB8ZDzsnJrFFg2ft7N6p7cWJ3O.jpg"></div>
+        <div class="poster-card"><img src="https://image.tmdb.org/t/p/w500/9eAn20y26wtB3aet7w9lHjuSgZ3.jpg"></div>
+
+    </div>
+</div>
+
+<!-- COMEDY SERIES-->
+<div class="section-title">Comedy Series</div>
+<div class="slider-wrapper">
+    <div class="arrow-btn arrow-left" onclick="slideLeft('comedySeries')">❮</div>
+    <div class="arrow-btn arrow-right" onclick="slideRight('comedySeries')">❯</div>
+
+    <div id="comedySeries" class="poster-row">
+
+        <div class="poster-card"><img src="https://image.tmdb.org/t/p/w500/iHSwvRVsRyxpX7FE7GbviaDvgGZ.jpg"></div>
+        <div class="poster-card"><img src="https://image.tmdb.org/t/p/w500/s1xnjbOIQtwGObPnydTebp74G2c.jpg"></div>
+        <div class="poster-card"><img src="https://image.tmdb.org/t/p/w500/hTExot1sfn7dHZjGrk0Aiwpntxt.jpg"></div>
+        <div class="poster-card"><img src="https://image.tmdb.org/t/p/w500/qYhT1O74tWlHI25cxL50hbDaF0O.jpg"></div>
+        <div class="poster-card"><img src="https://image.tmdb.org/t/p/w500/4VbD7kx2lIZc6Eo7O5plexbVf1J.jpg"></div>
+
+        <div class="poster-card"><img src="https://image.tmdb.org/t/p/w500/aY7FnbH4D1uPLxZ7Z2qxdjQbaO5.jpg"></div>
+        <div class="poster-card"><img src="https://image.tmdb.org/t/p/w500/l2ezB41chGDhCpXkh5eQgbB9Fmh.jpg"></div>
+        <div class="poster-card"><img src="https://image.tmdb.org/t/p/w500/zjPRezKqRR3YKHyCuXapnwYfJpA.jpg"></div>
+        <div class="poster-card"><img src="https://image.tmdb.org/t/p/w500/nrSAJXb74W4gUcaB8t0ZPFeNf4n.jpg"></div>
+        <div class="poster-card"><img src="https://image.tmdb.org/t/p/w500/jziO1LjnxkbZ3MZ37WXeqc5XkFe.jpg"></div>
+
+        <div class="poster-card"><img src="https://image.tmdb.org/t/p/w500/r6i4tJXvYDLfZo2ss5wQ8ebkNKM.jpg"></div>
+        <div class="poster-card"><img src="https://image.tmdb.org/t/p/w500/xqI9sySj2VxhX2FfCQEoPCEi0t3.jpg"></div>
+        <div class="poster-card"><img src="https://image.tmdb.org/t/p/w500/1UQ2JcbbhxrQZAhZJpH6t6TmWh2.jpg"></div>
+        <div class="poster-card"><img src="https://image.tmdb.org/t/p/w500/v4Jr2J8AoWKdmNWFmccYpoK1JP8.jpg"></div>
+        <div class="poster-card"><img src="https://image.tmdb.org/t/p/w500/jnQmZ9Ebe7aCsvBFOywyL38f4Sj.jpg"></div>
+
+        <div class="poster-card"><img src="https://image.tmdb.org/t/p/w500/yw7gr7DhHHVTLlO8Se8uHqKOQeQ.jpg"></div>
+        <div class="poster-card"><img src="https://image.tmdb.org/t/p/w500/6GFVhjyDeQgjgm0Z0MsQXJmfKTV.jpg"></div>
+        <div class="poster-card"><img src="https://image.tmdb.org/t/p/w500/aLxr2YeHRvFyihQ6YcqQX2skCgu.jpg"></div>
+        <div class="poster-card"><img src="https://image.tmdb.org/t/p/w500/pGzA1OVAx7Anl24THd5Vy0z8QVo.jpg"></div>
+    
+    </div>
+</div>
+
+<!-- DRAMA SERIES-->
+<div class="section-title">Drama Series</div>
+<div class="slider-wrapper">
+    <div class="arrow-btn arrow-left" onclick="slideLeft('dramaSeries')">❮</div>
+    <div class="arrow-btn arrow-right" onclick="slideRight('dramaSeries')">❯</div>
+
+    <div id="dramaSeries" class="poster-row">
+
+        <div class="poster-card"><img src="https://image.tmdb.org/t/p/w500/ggFHVNu6YYI5L9pCfOacjizRGt.jpg"></div>
+        <div class="poster-card"><img src="https://image.tmdb.org/t/p/w500/apbrbWs8M9lyOpJYU5WXrpFbk1Z.jpg"></div>
+        <div class="poster-card"><img src="https://image.tmdb.org/t/p/w500/stTEycfG9928HYGEISBFaG1ngjM.jpg"></div>
+        <div class="poster-card"><img src="https://image.tmdb.org/t/p/w500/xEDadlqirnDTM4eTJWcAfWv5xwe.jpg"></div>
+        <div class="poster-card"><img src="https://image.tmdb.org/t/p/w500/vXDPqYtVYS8hjLSezfhBF3nf6tS.jpg"></div>
+
+        <div class="poster-card"><img src="https://image.tmdb.org/t/p/w500/wcaDIAG1QdXQLRaj4vC1EFdBT2f.jpg"></div>
+        <div class="poster-card"><img src="https://image.tmdb.org/t/p/w500/1yeVJox3rjo2jBKrrihIMj7uoS9.jpg"></div>
+        <div class="poster-card"><img src="https://image.tmdb.org/t/p/w500/2uE91a4Hjv8TQ3JeM2z3U3yux2k.jpg"></div>
+        <div class="poster-card"><img src="https://image.tmdb.org/t/p/w500/uKvVjHNqB5VmOrdxqAt2F7J78ED.jpg"></div>
+        <div class="poster-card"><img src="https://image.tmdb.org/t/p/w500/yTC730nbaS8Wj6JkbQxKRAkTzFQ.jpg"></div>
+
+        <div class="poster-card"><img src="https://image.tmdb.org/t/p/w500/zX1cJdQgQki71RkVQunlslqY5T2.jpg"></div>
+        <div class="poster-card"><img src="https://image.tmdb.org/t/p/w500/oKIBhzZzDX07SoTHSyynztr6wC2.jpg"></div>
+        <div class="poster-card"><img src="https://image.tmdb.org/t/p/w500/pteuZ0bmPjsGVnyBlJp6mh8ycGX.jpg"></div>
+        <div class="poster-card"><img src="https://image.tmdb.org/t/p/w500/cLsSY0yho1PsB2UL3uP4YfV1dNc.jpg"></div>
+        <div class="poster-card"><img src="https://image.tmdb.org/t/p/w500/hwQvz1k0KrrfE0kP7FpC18JNpXH.jpg"></div>
+
+        <div class="poster-card"><img src="https://image.tmdb.org/t/p/w500/7Nng8YVVwh4FjFCSoaulJQ87A1E.jpg"></div>
+        <div class="poster-card"><img src="https://image.tmdb.org/t/p/w500/mIyTbT0yoyS9MhUlCT3VkOqkkKQ.jpg"></div>
+        <div class="poster-card"><img src="https://image.tmdb.org/t/p/w500/xVX8pFazc2DSES0O1gqOfRKqGZo.jpg"></div>
+        <div class="poster-card"><img src="https://image.tmdb.org/t/p/w500/wbHE2VQDbCTM6JCWIdgpF5da2Yr.jpg"></div>
+
+    </div>
+</div>
+
+<!-- ROMANTIC FILMS-->
+<div class="section-title">Romantic Films</div>
+<div class="slider-wrapper">
+    <div class="arrow-btn arrow-left" onclick="slideLeft('romanceFilms')">❮</div>
+    <div class="arrow-btn arrow-right" onclick="slideRight('romanceFilms')">❯</div>
+
+    <div id="romanceFilms" class="poster-row">
+
+        <div class="poster-card"><img src="https://image.tmdb.org/t/p/w500/xKaJl1u1aQGehGzRChy9Vyuk3F8.jpg"></div>
+        <div class="poster-card"><img src="https://image.tmdb.org/t/p/w500/mMZRKbRuJqKjWYIYYVDoU1QQHkJ.jpg"></div>
+        <div class="poster-card"><img src="https://image.tmdb.org/t/p/w500/dKjDJJG3qk9KrsYQTAyaV2pC9Zb.jpg"></div>
+        <div class="poster-card"><img src="https://image.tmdb.org/t/p/w500/o9H6qwZnQf3L7hIwrKyYUVJZZzI.jpg"></div>
+        <div class="poster-card"><img src="https://image.tmdb.org/t/p/w500/pU3bnutJU91u3b4IeRPQTOP8jhV.jpg"></div>
+
+        <div class="poster-card"><img src="https://image.tmdb.org/t/p/w500/q719jXXEzOoYaps6babgKnONONX.jpg"></div>
+        <div class="poster-card"><img src="https://image.tmdb.org/t/p/w500/lHu1wtNaczFPGFDTrjCSzeLPTKN.jpg"></div>
+        <div class="poster-card"><img src="https://image.tmdb.org/t/p/w500/dWSnsAGTFC8U27bWsy2RfwZs0au.jpg"></div>
+        <div class="poster-card"><img src="https://image.tmdb.org/t/p/w500/mdJNoYz1CMLRMNzSVogJrjdsdgo.jpg"></div>
+        <div class="poster-card"><img src="https://image.tmdb.org/t/p/w500/u2tnZ0L2dWrPVGOhANIDGn4WkYp.jpg"></div>
+
+        <div class="poster-card"><img src="https://image.tmdb.org/t/p/w500/eOwK1lUsabYP0UqPpXFfdbH3GXi.jpg"></div>
+        <div class="poster-card"><img src="https://image.tmdb.org/t/p/w500/nADrZ5MLPDaB1btCxm1l1ZJ8LFZ.jpg"></div>
+        <div class="poster-card"><img src="https://image.tmdb.org/t/p/w500/w2PMyoyLU22YvrGK3smVM9fW1jj.jpg"></div>
+        <div class="poster-card"><img src="https://image.tmdb.org/t/p/w500/jbGRq3CX6CPtFOGYCtFDJ5entL8.jpg"></div>
+        <div class="poster-card"><img src="https://image.tmdb.org/t/p/w500/gdghWwZ8pSKoY8YLvGRdGJXrRgn.jpg"></div>
+
+        <div class="poster-card"><img src="https://image.tmdb.org/t/p/w500/zfE0R94v1E8cuKAerbskfD3VfUt.jpg"></div>
+        <div class="poster-card"><img src="https://image.tmdb.org/t/p/w500/xBKGJQsAIeweesB79KC89FpBrVr.jpg"></div>
+        <div class="poster-card"><img src="https://image.tmdb.org/t/p/w500/waoFZkhjJZQSfA3ZW3Zu8H8hBsA.jpg"></div>
+        <div class="poster-card"><img src="https://image.tmdb.org/t/p/w500/8uYIjv7NR07QqMvBYrNfoYk5TiF.jpg"></div>
+
+    </div>
+</div>
+
+<!-- HORROR FILMS-->
+<div class="section-title">Horror Films</div>
+<div class="slider-wrapper">
+    <div class="arrow-btn arrow-left" onclick="slideLeft('horrorFilms')">❮</div>
+    <div class="arrow-btn arrow-right" onclick="slideRight('horrorFilms')">❯</div>
+
+    <div id="horrorFilms" class="poster-row">
+
+        <div class="poster-card"><img src="https://image.tmdb.org/t/p/w500/udDclJoHjfjb8Ekgsd4FDteOkCU.jpg"></div>
+        <div class="poster-card"><img src="https://image.tmdb.org/t/p/w500/nlCHUWjY9XWbuEUQauCBgnY8ymF.jpg"></div>
+        <div class="poster-card"><img src="https://image.tmdb.org/t/p/w500/bdHHNVkNwCuWHa3gwZMObn2yFc8.jpg"></div>
+        <div class="poster-card"><img src="https://image.tmdb.org/t/p/w500/hO7KbdvGOtDdeg0W4Y5nKEHeDDh.jpg"></div>
+        <div class="poster-card"><img src="https://image.tmdb.org/t/p/w500/tcvxGoqfNcaGtbn8KstcSLCFYyA.jpg"></div>
+
+        <div class="poster-card"><img src="https://image.tmdb.org/t/p/w500/7c9UVPPi88KzRz5RVzkdZlrmVec.jpg"></div>
+        <div class="poster-card"><img src="https://image.tmdb.org/t/p/w500/oXoq9PjzvY4xXHzkwmo7aX6ixkm.jpg"></div>
+        <div class="poster-card"><img src="https://image.tmdb.org/t/p/w500/jrY8o1t15fOj5KaT2tfbcWcCYDi.jpg"></div>
+        <div class="poster-card"><img src="https://image.tmdb.org/t/p/w500/fn6Y0SQYHi3F7S3w7Dnk3a1JpN1.jpg"></div>
+        <div class="poster-card"><img src="https://image.tmdb.org/t/p/w500/yh5C6vWXT2z4FfLzgPTOqk0CwZb.jpg"></div>
+
+        <div class="poster-card"><img src="https://image.tmdb.org/t/p/w500/4Y9yiFkEyLZDWz2JRizoHfRtAfd.jpg"></div>
+        <div class="poster-card"><img src="https://image.tmdb.org/t/p/w500/fpuorQUi8I5jBqFa9UcRgxNfHKt.jpg"></div>
+        <div class="poster-card"><img src="https://image.tmdb.org/t/p/w500/dFB6TUUHcOwN35z2nzKQ2dEU17f.jpg"></div>
+        <div class="poster-card"><img src="https://image.tmdb.org/t/p/w500/dcB8ZDzsnJrFFg2ft7N6p7cWJ3O.jpg"></div>
+        <div class="poster-card"><img src="https://image.tmdb.org/t/p/w500/oAQqFfG9S84oB9dCzQG2SkJ0UK.jpg"></div>
+
+        <div class="poster-card"><img src="https://image.tmdb.org/t/p/w500/hitgVqC2bLay1bZQFNbiyZrk9HS.jpg"></div>
+        <div class="poster-card"><img src="https://image.tmdb.org/t/p/w500/n9E2qoQ88XeNGH2tQbbQqsx6jSV.jpg"></div>
+        <div class="poster-card"><img src="https://image.tmdb.org/t/p/w500/cvx3b8XSpBvUQQoaxhS1dF4eDdc.jpg"></div>
+        <div class="poster-card"><img src="https://image.tmdb.org/t/p/w500/xBKGJQsAIeweesB79KC89FpBrVr.jpg"></div>
+
+    </div>
+</div>
+
+<!-- POPUP -->
+<div id="popup" class="popup-backdrop">
+
+    <div class="popup-box">
+        <div class="popup-title">Login to BetterBoxd</div>
+
+        <input type="text" class="popup-input" placeholder="Username">
+        <input type="password" class="popup-input" placeholder="Password">
+
+        <button class="popup-btn">Login</button>
+        <div class="close-popup" onclick="closePopup()">Close</div>
+
+        <hr style="border:1px solid #333; margin: 15px 0;">
+        <div style="text-align:center;">Don’t have an account?</div>
+        <button class="popup-btn" onclick="window.location.href='CreateAccount.html'">Create Account</button>
+    </div>
+</div>
+
+
+<!-- JAVASCRIPT-->
+
+<script>
+    /* POPUP */
+    function openPopup() {
+        document.getElementById("popup").style.display = "flex";
+    }
+    function closePopup() {
+        document.getElementById("popup").style.display = "none";
+    }
+
+    /* DROPDOWN CONTROLLER */
+    function toggleMenu(menuId) {
+    const menu = document.getElementById(menuId);
+
+    if (menu.style.maxHeight && menu.style.maxHeight !== "0px") {
+        menu.style.maxHeight = "0";
+        return;
+    }
+
+    document.querySelectorAll(".dropdown-menu").forEach(m => {
+        m.style.maxHeight = "0";
+    });
+
+    menu.style.maxHeight = "300px";
+}
+
+document.addEventListener("click", function(e) {
+    if (!e.target.closest(".dropdown")) {
+        document.querySelectorAll(".dropdown-menu").forEach(m => {
+            m.style.maxHeight = "0";
+        });
+    }
+});
+
+// Navbar dışına tıklayınca dropdown kapanması
+document.addEventListener("click", function(e) {
+    if (!e.target.closest(".dropdown")) {
+        document.querySelectorAll(".dropdown-menu").forEach(m => {
+            m.style.maxHeight = "0";
+        });
+    }
+});
+
+function slideLeft(rowId) {
+    const row = document.getElementById(rowId);
+    if (row.scrollLeft <= 0) {
+        row.scrollLeft = row.scrollWidth;
+    } else {
+        row.scrollLeft -= 350;
+    }
+}
+
+function slideRight(rowId) {
+    const row = document.getElementById(rowId);
+    if (row.scrollLeft + row.clientWidth >= row.scrollWidth - 10) {
+        // Başa dön
+        row.scrollLeft = 0;
+    } else {
+        row.scrollLeft += 350;
+    }
+}
+
+
+</script>
+
+<!-- FOOTER SEGMENT-->
+<footer class="footer">
+    <div class="footer-links">
+        <a href="#">About</a>
+        <a href="#">Contact</a>
+    </div>
+
+    <div class="footer-copy">
+        © BetterBoxd. Film data from OMDB & TMDB. Contributed by Ali Emre Yenihayat, Duygu Akman and Berk Ulker. All rights (which is none) reserved.
+    </div>
+</footer>
+
+
+</body>
+</html>

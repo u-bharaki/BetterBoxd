@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Create Your Account – BetterBoxd</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<style>
+    body {
+        margin: 0;
+        font-family: Arial, sans-serif;
+        background-color: #0d0d0d;
+        color: #fff;
+    }
+
+    /* NAVBAR --------------------------------------------------------------------------------------------------------------------------- */
+    .navbar {
+        width: 100%;
+        height: 70px;
+        background-color: #111;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0 40px;
+        box-sizing: border-box;
+        border-bottom: 1px solid #222;
+        position: relative;
+    }
+
+    .logo {
+        font-size: 28px;
+        font-weight: bold;
+        color: #00cc66;
+        cursor: pointer;
+        text-decoration: none;
+    }
+
+    .nav-left {
+        display: flex;
+        align-items: center;
+        gap: 30px;
+    }
+
+    .nav-center {
+        flex: 1;
+        display: flex;
+        justify-content: center;
+    }
+
+    .nav-right {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+    }
+
+    .nav-btn {
+        background: none;
+        border: none;
+        color: #eee;
+        font-size: 16px;
+        cursor: pointer;
+        transition: 0.2s;
+    }
+
+    .nav-btn:hover {
+        color: #00cc66;
+    }
+
+    .search-input {
+        width: 420px;
+        padding: 10px 15px;
+        font-size: 16px;
+        background-color: #1a1a1a;
+        border: 1px solid #333;
+        color: white;
+        border-radius: 5px;
+        outline: none;
+        transition: 0.2s;
+    }
+
+    .search-input:focus {
+        border-color: #00cc66;
+    }
+
+    .user-btn {
+        font-size: 16px;
+        background-color: #1a1a1a;
+        padding: 10px 15px;
+        border: 1px solid #333;
+        border-radius: 5px;
+        cursor: pointer;
+        transition: 0.2s;
+    }
+
+    .user-btn:hover {
+        border-color: #00cc66;
+        color: #00cc66;
+    }
+
+    /* DROPDOWN */
+    .dropdown {
+        position: relative;
+    }
+
+    .dropdown-menu {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        background-color: #141414;
+        width: 180px;
+        border: 1px solid #333;
+        border-top: none;
+        overflow: hidden;
+        max-height: 0;
+        transition: max-height 0.3s ease;
+        z-index: 20;
+    }
+
+    .dropdown-item {
+        padding: 12px 15px;
+        cursor: pointer;
+        border-bottom: 1px solid #222;
+        transition: 0.2s;
+    }
+
+    .dropdown-item:hover {
+        background-color: #1f1f1f;
+        color: #00cc66;
+    }
+
+    /* MAIN ACCOUNT BOX */
+    .account-container {
+        width: 100%;
+        display: flex;
+        justify-content: center;
+        margin-top: 80px;
+        margin-bottom: 100px;
+    }
+
+    .account-box {
+        width: 420px;
+        background-color: #141414;
+        padding: 30px;
+        border-radius: 10px;
+        border: 1px solid #333;
+    }
+
+    .account-title {
+        font-size: 28px;
+        margin-bottom: 20px;
+        font-weight: bold;
+        text-align: center;
+    }
+
+    .input-field {
+        width: 100%;
+        background-color: #1c1c1c;
+        border: 1px solid #333;
+        padding: 12px;
+        margin-bottom: 15px;
+        border-radius: 6px;
+        color: #fff;
+        cursor: pointer;
+        font-size: 15px;
+    }
+
+    .submit-btn {
+        width: 100%;
+        padding: 12px;
+        background-color: #00cc66;
+        border: none;
+        color: #fff;
+        font-size: 17px;
+        border-radius: 6px;
+        cursor: pointer;
+        margin-top: 10px;
+    }
+
+    .submit-btn:hover {
+        background-color: #00e673;
+    }
+
+    /* FOOTER */
+    .footer {
+        width: 100%;
+        background-color: #1e2530;
+        padding: 40px 0;
+        text-align: center;
+        margin-top: 80px;
+    }
+
+    .footer-links {
+        margin-bottom: 10px;
+    }
+
+    .footer-links a {
+        color: #b0b9c5;
+        margin: 0 15px;
+        text-decoration: none;
+        font-size: 15px;
+        transition: color 0.2s;
+    }
+
+    .footer-links a:hover {
+        color: #ffffff;
+    }
+
+    .footer-copy {
+        color: #8a93a0;
+        font-size: 14px;
+    }
+</style>
+
+</head>
+
+<body>
+
+<!-- NAVBAR ------------------------------------------------------------------------------------------------>
+<div class="navbar">
+
+    <div class="nav-left">
+        <a class="logo" onclick="window.location.href='index.html'">BetterBoxd</a>
+
+        <div class="dropdown">
+            <button class="nav-btn" onclick="toggleMenu('filmsMenu')">Films ▼</button>
+            <div id="filmsMenu" class="dropdown-menu">
+                <div class="dropdown-item">Comedy</div>
+                <div class="dropdown-item">Horror</div>
+                <div class="dropdown-item">Thriller</div>
+                <div class="dropdown-item">Action</div>
+            </div>
+        </div>
+
+        <div class="dropdown">
+            <button class="nav-btn" onclick="toggleMenu('seriesMenu')">Series ▼</button>
+            <div id="seriesMenu" class="dropdown-menu">
+                <div class="dropdown-item">Comedy</div>
+                <div class="dropdown-item">Horror</div>
+                <div class="dropdown-item">Thriller</div>
+                <div class="dropdown-item">Action</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="nav-center">
+        <input type="text" class="search-input" placeholder="Search movies...">
+    </div>
+
+    <div class="nav-right">
+        <button class="user-btn">My Lists</button>
+        <button class="user-btn">Profile</button>
+        <button class="user-btn">Login</button>
+    </div>
+</div>
+
+
+<!-- MAIN ACCOUNT CREATE BOX ----------------------------------------------------------------------------->
+<div class="account-container">
+    <div class="account-box">
+        <div class="account-title">Create Your Account</div>
+
+        <!-- ERROR POPUP -->
+        <div id="error-box" style="
+            display:none;
+            background-color:#661f1f;
+            border:1px solid #aa3b3b;
+            padding:12px;
+            border-radius:6px;
+            margin-bottom:15px;
+            color:#ffb3b3;
+            text-align:center;
+        ">
+            <!-- Hata mesajı buraya yazılacak -->
+        </div>
+
+        <!-- FORM -->
+        <form id="registerForm">
+            <input class="input-field" name="username" type="text" placeholder="Username" required>
+            <input class="input-field" name="email" type="email" placeholder="Email" required>
+            <input class="input-field" name="first_name" type="text" placeholder="First Name" required>
+            <input class="input-field" name="last_name" type="text" placeholder="Last Name" required>
+            <input class="input-field" name="password" type="password" placeholder="Password" required>
+
+            <button class="submit-btn" type="submit">Create Account</button>
+        </form>
+    </div>
+</div>
+
+
+
+<!-- FOOTER ------------------------------------------------------------------------------------------------>
+<footer class="footer">
+    <div class="footer-links">
+        <a href="#">About</a>
+        <a href="#">Contact</a>
+    </div>
+
+    <div class="footer-copy">
+        © BetterBoxd. Film data from OMDB & TMDB. Contributed by Ali Emre Yenihayat, Duygu Akman and Berk Ulker. All rights (which is none) reserved.
+    </div>
+</footer>
+
+<script>
+function toggleMenu(menuId) {
+    const menu = document.getElementById(menuId);
+
+    if (menu.style.maxHeight && menu.style.maxHeight !== "0px") {
+        menu.style.maxHeight = "0";
+        return;
+    }
+
+    document.querySelectorAll(".dropdown-menu").forEach(m => {
+        m.style.maxHeight = "0";
+    });
+
+    menu.style.maxHeight = "300px";
+}
+
+document.addEventListener("click", function(e) {
+    if (!e.target.closest(".dropdown")) {
+        document.querySelectorAll(".dropdown-menu").forEach(m => {
+            m.style.maxHeight = "0";
+        });
+    }
+});
+</script>
+
+<script>
+document.getElementById("registerForm").addEventListener("submit", async function(e) {
+    e.preventDefault();
+
+    const formData = new FormData(this);
+
+    const response = await fetch("http://localhost:5000/create_user", {
+        method: "POST",
+        body: formData
+    });
+
+    const data = await response.json();
+
+    // HATA VARSA
+    if (!data.success) {
+        const box = document.getElementById("error-box");
+        box.style.display = "block";
+        box.innerText = data.message;
+        return;
+    }
+
+    // BAŞARILI OLURSA yönlendir
+    window.location.href = "http://localhost:5000/account_created";
+});
+</script>
+
+</body>
+</html>

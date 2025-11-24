@@ -224,7 +224,7 @@ def get_films(approx_film_count, conn, cursor):
                     response = requests.get(BASE_URL, params=params)
                     data = response.json()
                 except Exception as e:
-                    print("[ERROR] Request hata verdi: {e}")
+                    print(f"[ERROR] Request hata verdi: {e}")
                     save_session()
                     conn.commit()
                     continue
