@@ -131,12 +131,15 @@ def index():
 @app.route('/api/productions')
 def get_all_productions():
     db = get_db()
+
     page = int(request.args.get('page', 1))
     limit = 20
     offset = (page - 1) * limit
-    genre = request.args.get('genre')
-    year = request.args.get('year')
+
+    genre = request.args.get('genre', 'all')
+    year = request.args.get('year', 'all')
     sort_by = request.args.get('sort', 'pop')
+    letter = request.args.get('letter', 'all')
 
     query = """
         SELECT p.id, p.title, p.start_year, p.poster_link, 
@@ -146,6 +149,14 @@ def get_all_productions():
     """
     params = []
     where_clauses = []
+
+    if letter and letter != 'all':
+        if letter == '#':
+            where_clauses.append(f"p.letter GLOB '[0-9]*'")
+        else:
+            where_clauses.append("p.title LIKE ?")
+            params.append(f"{letter}%")
+
 
     if genre and genre != 'all':
         where_clauses.append("p.genre LIKE ?")

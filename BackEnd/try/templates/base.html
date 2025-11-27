@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}BetterBoxd{% endblock %}</title>
+
+    <!-- Tailwind CSS (Görsellik için şart) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Fontlar -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Merriweather:wght@300;400&display=swap" rel="stylesheet">
+
+    <!-- Senin CSS Dosyan -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body class="bg-[#14181C] text-[#E0E0E0] font-sans antialiased">
+
+    <!-- GLOBAL NAVBAR (Her sayfada sabit) -->
+    <header class="header sticky top-0 bg-[#1C2329] py-4 z-50 shadow-lg border-b border-gray-800">
+        <nav class="container mx-auto px-4 flex justify-between items-center max-w-7xl">
+            <!-- Logo -->
+            <a href="#" onclick="navigateTo('production'); return false;" class="text-2xl font-bold text-[#FFC107] cursor-pointer hover:text-yellow-400 transition">BetterBoxd</a>
+
+            <!-- Arama Çubuğu -->
+            <div class="search-bar flex-1 max-w-lg mx-8 relative hidden md:block">
+                <input type="text" placeholder="Film, yönetmen veya kullanıcı ara..."
+                       class="w-full px-5 py-2 bg-[#2C343A] border-2 border-transparent rounded-full text-sm text-gray-200 focus:outline-none focus:border-[#FFC107] transition-all">
+            </div>
+
+            <!-- Menü Linkleri -->
+            <div class="nav-links flex items-center gap-6">
+                <button onclick="openModal()" class="bg-[#FFC107] text-[#14181C] px-5 py-2 rounded-full font-bold text-sm hover:bg-[#FFD54F] transition shadow-lg hover:shadow-yellow-500/20">+ İncele/Log</button>
+
+                <a href="#" onclick="navigateTo('feed')" class="hover:text-[#FFC107] font-medium transition">Akış</a>
+                <a href="#" onclick="navigateTo('lists')" class="hover:text-[#FFC107] font-medium transition">Listelerim</a>
+                <a href="#" onclick="navigateTo('films')" class="hover:text-[#FFC107] font-medium transition">Filmler</a>
+
+                <!-- Profil İkonu ve Dropdown -->
+                <div class="relative group">
+                    <div class="w-10 h-10 rounded-full bg-[#FFC107] flex items-center justify-center text-[#14181C] font-bold cursor-pointer hover:scale-105 transition">
+                        {{ session.get('username', 'G')[0].upper() }}
+                    </div>
+                    <div class="absolute right-0 mt-2 w-48 bg-[#2C343A] rounded-lg shadow-xl py-2 hidden group-hover:block border border-gray-700">
+                        <a href="#" onclick="navigateTo('profile')" class="block px-4 py-2 hover:bg-[#3A424A] hover:text-[#FFC107]">Profilim</a>
+                        <a href="#" onclick="navigateTo('settings')" class="block px-4 py-2 hover:bg-[#3A424A] hover:text-[#FFC107]">Ayarlar</a>
+                        <div class="border-t border-gray-700 my-1"></div>
+                        <a href="{{ url_for('logout') }}" class="block px-4 py-2 text-red-400 hover:bg-[#3A424A]">Çıkış Yap</a>
+                    </div>
+                </div>
+            </div>
+        </nav>
+    </header>
+
+    <!-- ANA İÇERİK ALANI (Değişken Kısım) -->
+    <main class="container mx-auto px-4 py-8 max-w-7xl">
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- REVIEW MODAL (Her yerden erişilebilir) -->
+    <div class="modal fixed inset-0 bg-black/80 z-[2000] hidden items-center justify-center backdrop-blur-sm transition-opacity" id="reviewModal">
+        <div class="modal-content bg-[#2C343A] p-8 rounded-2xl max-w-lg w-[90%] shadow-2xl border border-[#3A424A] relative">
+            <button onclick="closeModal()" class="absolute top-4 right-4 text-gray-400 hover:text-white text-2xl">&times;</button>
+
+            <h2 class="modal-title text-2xl font-bold text-white mb-6 border-b border-[#3A424A] pb-4">İnceleme Yaz</h2>
+
+            <div class="form-group mb-6">
+                <label class="block text-gray-300 font-semibold mb-2">Puanın</label>
+                <div class="star-rating text-3xl" id="modalRating">
+                    <!-- Yıldızlar: JS ve CSS ile çalışır -->
+                    <span class="star" data-value="1"></span><span class="star" data-value="2"></span>
+                    <span class="star" data-value="3"></span><span class="star" data-value="4"></span>
+                    <span class="star" data-value="5"></span><span class="star" data-value="6"></span>
+                    <span class="star" data-value="7"></span><span class="star" data-value="8"></span>
+                    <span class="star" data-value="9"></span><span class="star" data-value="10"></span>
+                </div>
+            </div>
+
+            <div class="form-group mb-6">
+                <label class="block text-gray-300 font-semibold mb-2">Düşüncelerin</label>
+                <textarea class="form-textarea w-full bg-[#1C2329] border border-[#3A424A] rounded-lg p-3 text-white focus:border-[#FFC107] outline-none min-h-[120px]" placeholder="Bu film hakkında ne düşünüyorsun?"></textarea>
+            </div>
+
+            <div class="modal-actions flex gap-4">
+                <button class="flex-1 py-3 rounded-lg font-bold bg-[#3A424A] text-white hover:bg-[#4A5560] transition" onclick="closeModal()">İptal</button>
+                <button class="flex-1 py-3 rounded-lg font-bold bg-[#FFC107] text-[#14181C] hover:bg-[#FFD54F] transition" onclick="saveReview()">Kaydet</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript Dosyan -->
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+</body>
+</html>
