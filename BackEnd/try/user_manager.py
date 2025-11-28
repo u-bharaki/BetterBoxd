@@ -2,6 +2,7 @@
 
 import sqlite3
 import hashlib
+import uuid
 from typing import Optional, Dict, Any, List
 
 # ana uygulamanızdaki get_db_path fonksiyonunun bir kopyası olarak kabul edin.
@@ -49,9 +50,9 @@ class UserManager:
             conn = _get_db_connection(self.db_path)
             cursor = conn.cursor()
             cursor.execute(f'''
-            INSERT INTO {self.users_table_name} (username, password, email, first_name, last_name)
-            VALUES (?, ?, ?, ?, ?)
-            ''', (username, hashed_password, email, first_name, last_name))
+            INSERT INTO {self.users_table_name} (id, username, password, email, first_name, last_name)
+            VALUES (?, ?, ?, ?, ?, ?)
+            ''', (str(uuid.uuid4()), username, hashed_password, email, first_name, last_name))
             conn.commit()
             conn.close()
             return True

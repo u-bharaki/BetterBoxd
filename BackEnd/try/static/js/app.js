@@ -1,5 +1,5 @@
 // --- GLOBAL DEĞİŞKENLER ---
-window.currentProductionId = 1; // Sayfada açık olan film (Varsayılan 1)
+window.currentProductionId = "c79d4af6-0214-44cb-b1d4-923b166c68da"; // Sayfada açık olan film (Varsayılan 1)
 window.activeProductionId = null; // Modalda işlem yapılan film
 
 // --- SAYFA YÖNLENDİRME (ROUTING) ---
@@ -134,7 +134,7 @@ function initializeStarRating(containerId) {
     }
 }
 
-// --- API VERİ ÇEKME İŞLEMLERİ ---
+// --- LOAD ---
 
 async function loadProduction(id) {
     try {
@@ -169,18 +169,9 @@ async function loadProduction(id) {
     }
 }
 
-// --- FİLMLER SAYFASI LOJİĞİ ---
-
-let currentFilters = {
-    page: 1,
-    genre: 'all',
-    year: 'all',
-    sort: 'pop',
-    letter: 'all'
-};
-
-// Sayfa ilk açıldığında veya filtre değiştiğinde çalışır
 async function loadAllMovies() {
+    // Sayfa ilk açıldığında veya filtre değiştiğinde çalışır
+
     const container = document.getElementById('films-grid');
     const indicator = document.getElementById('page-indicator');
 
@@ -213,16 +204,22 @@ async function loadAllMovies() {
             const poster = movie.poster || 'https://via.placeholder.com/200x300?text=No+Poster';
 
             const html = `
-                <div class="list-card" onclick="loadProduction(${movie.id}); navigateTo('production')" style="padding:0; overflow:hidden; border:none; background:transparent;">
-                    <div style="position:relative;">
-                        <img src="${poster}" style="width:100%; aspect-ratio: 2/3; object-fit:cover; border-radius:8px; border:1px solid #333;">
-                        <div style="position:absolute; top:5px; right:5px; background:rgba(0,0,0,0.8); color:#FFC107; padding:2px 6px; border-radius:4px; font-size:12px; font-weight:bold;">
+                <div class="group relative cursor-pointer" onclick="loadProduction('${movie.id}'); navigateTo('production')">
+                    <div class="relative overflow-hidden rounded-xl border border-[#3A424A] group-hover:border-[#FFC107] transition-all">
+                        <img src="${poster}" class="w-full aspect-[2/3] object-cover transform group-hover:scale-105 transition duration-300">
+                        
+                        <!-- Puan Rozeti -->
+                        <div class="absolute top-2 right-2 bg-black/80 text-[#FFC107] px-2 py-1 rounded text-xs font-bold shadow-lg backdrop-blur-sm">
                             ★ ${movie.rating}
                         </div>
+                        
+                        <!-- Hover Efekti (Karartma) -->
+                        <div class="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-all duration-300"></div>
                     </div>
-                    <div style="padding:10px 0; text-align:left;">
-                        <h4 style="color:#fff; font-size:15px; margin-bottom:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${movie.title}</h4>
-                        <span style="color:#666; font-size:13px;">${movie.year}</span>
+                    
+                    <div class="mt-3">
+                        <h4 class="text-white font-bold text-sm truncate group-hover:text-[#FFC107] transition">${movie.title}</h4>
+                        <span class="text-gray-500 text-xs">${movie.year}</span>
                     </div>
                 </div>
             `;
@@ -230,45 +227,11 @@ async function loadAllMovies() {
         });
 
         // Sayfa Göstergesini Güncelle
-        indicator.textContent = `Sayfa ${data.current_page} / ${data.total_pages}`;
-
-        // Buton durumlarını (ilk/son sayfa) yönetmek istersen burada yapabilirsin
-
+        if (indicator) indicator.textContent = `Sayfa ${data.current_page} / ${data.total_pages}`;
     } catch (error) {
         console.error('Filmler yüklenirken hata:', error);
-        container.innerHTML = '<p>Yükleme hatası.</p>';
+        container.innerHTML = '<p class="text-red-500">Yükleme hatası.</p>';
     }
-}
-
-// Filtre değişince (Dropdown'lar tetikler)
-function changeFilter() {
-    // 1. HTML'den değerleri al
-    currentFilters.genre = document.getElementById('filter-genre').value;
-    currentFilters.year = document.getElementById('filter-year').value;
-    currentFilters.sort = document.getElementById('sort-by').value;
-
-    // 2. Filtre değişince sayfa 1'e dönmeli
-    currentFilters.page = 1;
-
-    // 3. Yeniden yükle
-    loadAllMovies();
-}
-
-// Sayfa değişince (Önceki/Sonraki butonları tetikler)
-function changePage(direction) {
-    // direction: +1 (Sonraki) veya -1 (Önceki)
-    const newPage = currentFilters.page + direction;
-
-    // Sayfa 1'den küçük olamaz
-    if (newPage < 1) return;
-
-    // (Opsiyonel: Toplam sayfayı geçip geçmediğini de kontrol edebilirsin)
-
-    currentFilters.page = newPage;
-    loadAllMovies();
-
-    // Sayfa başına kaydır
-    window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
 async function loadCast(id) {
@@ -326,7 +289,6 @@ async function loadReviews(id) {
     });
 }
 
-// --- DİĞER SAYFALAR ---
 async function loadFeed() {
     const container = document.getElementById('feed-container');
     container.innerHTML = 'Yükleniyor...';
@@ -352,8 +314,257 @@ async function loadFeed() {
     container.innerHTML = html;
 }
 
-async function loadMyLists() { /* Aynısı kalsın... */ }
 async function loadProfile() { /* Aynısı kalsın... */ }
+
+let currentFilters = {
+    page: 1,
+    genre: 'all',
+    year: 'all',
+    sort: 'pop',
+    letter: 'all'
+};
+
+// ----- LISTS -----
+async function loadMyLists() {
+    const container = document.getElementById('lists-container')
+    container.innerHTML = '<p class="text-gary-500">Listeler Yükleniyor...</p>';
+
+    try {
+        const response = await fetch('/api/my-lists')
+        if (!response.ok) throw new Error("Sunucu hatası");
+        const lists = await response.json()
+        console.log("Burdayım");
+        if (lists.length === 0) {
+            container.innerHTML = `
+                <div class="col-span-full text-center py-10 bg-[#2C343A] rounded-xl border border-dashed border-gray-600">
+                    <p class="text-gray-400 mb-4">Henüz hiç listen yok.</p>
+                    <button onclick="createNewList()" class="text-[#FFC107] font-bold hover:underline">İlk listeni oluştur!</button>
+                </div>            
+            `;
+            return;
+        }
+        console.log("Yok Burdayım");
+
+        let html = '';
+        let hasRendered = false;
+
+        for (const list of lists) {
+            try {
+                if (!list.id || !list.name) {
+                    console.warn("Eksik veri: Listede ID veya isim yok.")
+                    continue;
+                }
+
+                html += `
+                    <div class="group relative bg-[#2C343A] p-6 rounded-xl border border-[#3A424A] hover:border-[#FFC107] transition-all hover:shadow-lg hover:shadow-yellow-900/10">
+                        <!-- 1. SİLME BUTONU (Sağ Üst Köşe - Çarpı) -->
+                        <button onclick="deleteList('${list.id}')" 
+                                class="absolute top-3 right-3 text-gray-500 hover:text-red-500 hover:bg-red-900/20 w-8 h-8 rounded-full flex items-center justify-center transition opacity-0 group-hover:opacity-100"
+                                title="Listeyi Sil">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                        </button>
+    
+                        <!-- 2. BAŞLIK VE DÜZENLEME ALANI -->
+                        <div class="mb-4 pr-8"> <!-- Sağdan padding bıraktık ki çarpı butonuna değmesin -->
+                            
+                            <!-- GÖRÜNEN KISIM (Başlık + Kalem) -->
+                            <div id="title-box-${list.id}" 
+                                 class="flex items-center gap-2 cursor-pointer group/edit" 
+                                 onclick="enableEdit('${list.id}')">
+                                
+                                <h3 class="text-xl font-bold text-white truncate">${list.name}</h3>
+                                
+                                <!-- Kalem İkonu (Sadece üzerine gelince çıkar) -->
+                                <span class="text-[#FFC107] opacity-0 group-hover/edit:opacity-100 transition text-sm">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                                    </svg>
+                                </span>
+                            </div>
+    
+                            <!-- DÜZENLEME KISMI (Gizli Input) -->
+                            <input type="text" 
+                                   id="input-${list.id}" 
+                                   value="${list.name}"
+                                   class="hidden w-full bg-[#1C2329] text-white border border-[#FFC107] rounded px-2 py-1 outline-none font-bold text-xl"
+                                   onkeydown="handleEditKeydown(event, '${list.id}')"
+                                   onblur="cancelEdit('${list.id}')"> 
+                                   <!-- onblur: Dışarı tıklayınca iptal et/kaydet -->
+                        </div>
+                        
+                        <p class="text-gray-500 text-sm">Bu listede ${list.production_count} yapım var.</p>
+                    </div>
+                `;
+                hasRendered = true;
+            } catch (e) {
+                console.error("Render hatası: ", e, "Hatalı liste objesi: ", list)
+            }
+        }
+        container.innerHTML = html;
+
+        if (!hasRendered && lists.length > 0) {
+            container.innerHTML = '<p class="text-red-500">Listeler render edilirken bir hata oluştu. Detaylar için konsola bakınız.</p>';
+        }
+
+    } catch (e) {
+        console.error("Hata: ", e);
+        container.innerHTML = '<p class="text-red-500">Listeler yüklenemedi.</p>';
+    }
+}
+
+// 1. Düzenleme Modunu Aç
+function enableEdit(listId) {
+    // Başlık divini gizle
+    document.getElementById(`title-box-${listId}`).classList.add('hidden');
+
+    // Inputu göster ve odaklan
+    const input = document.getElementById(`input-${listId}`);
+    input.classList.remove('hidden');
+    input.focus();
+    // İmleci sona getirmek için küçük bir hack
+    const val = input.value;
+    input.value = '';
+    input.value = val;
+}
+
+// 2. Tuşlara Basılınca (Enter = Kaydet, Esc = İptal)
+function handleEditKeydown(event, listId) {
+    if (event.key === 'Enter') {
+        const newName = event.target.value;
+        saveListName(listId, newName);
+        event.target.blur(); // Inputtan çık (bu da onblur'u tetikler ama saveListName zaten işi yapmış olur)
+    } else if (event.key === 'Escape') {
+        cancelEdit(listId);
+    }
+}
+
+// 3. Düzenlemeyi İptal Et (Veya dışarı tıklayınca kaydet)
+function cancelEdit(listId) {
+    // Burada tercih senin: Dışarı tıklayınca kaydetsin mi iptal mi etsin?
+    // Modern UX genelde "dışarı tıklayınca kaydet" şeklindedir.
+    // Eğer iptal etsin istersen sadece sınıfları değiştir.
+
+    const input = document.getElementById(`input-${listId}`);
+    const newName = input.value.trim();
+
+    // Eğer isim değişmişse ve boş değilse kaydetmeyi dene
+    // (Not: Basit olması için burada direkt eski haline döndürüyoruz,
+    // kaydetmeyi sadece Enter ile yapmak daha güvenli olabilir karışıklığı önlemek için)
+
+    // Şimdilik sadece görünümü eski haline getiriyoruz (Esc basmış gibi)
+    document.getElementById(`title-box-${listId}`).classList.remove('hidden');
+    input.classList.add('hidden');
+}
+
+// 4. İsmi Sunucuya Kaydet
+async function saveListName(listId, newName) {
+    if (!newName.trim()) {
+        alert("İsim boş olamaz");
+        cancelEdit(listId);
+        return;
+    }
+
+    try {
+        const response = await fetch(`/api/list/${listId}/update`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' }, // Düzeltilmiş header
+            body: JSON.stringify({ name: newName })
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+            // Tüm listeyi yeniden yükle ki her şey tazelensin
+            loadMyLists();
+        } else {
+            alert("Hata: " + result.error);
+            cancelEdit(listId);
+        }
+    } catch (e) {
+        console.error(e);
+    }
+}
+
+// 5. Silme (Artık çarpı butonu çağırıyor)
+async function deleteList(listId) {
+    if (!confirm("Bu listeyi silmek istediğine emin misin?")) return;
+
+    try {
+        const response = await fetch(`/api/list/${listId}/delete`, { method: 'POST' });
+        const result = await response.json();
+
+        if (result.success) {
+            loadMyLists();
+        } else {
+            alert("Hata: " + result.error);
+        }
+    } catch (e) {
+        console.error(e);
+    }
+}
+
+async function createNewList() {
+        console.log("111111");
+    const name = prompt("Yeni listenin adı ne olsun?");
+        console.log("2222222");
+
+    if (!name) return;
+        console.log("333333");
+
+    try {
+        const response = await fetch('/api/list/create', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ list_name: name})
+        });
+        const result = await response.json();
+        console.log("444444444");
+
+        if (result.success) {
+        console.log("5555555555");
+
+            loadMyLists();
+        } else {
+            alert("Hata: " + result.error);
+        }
+    } catch (e) {
+        console.error(e);
+    }
+}
+
+// Filtre değişince (Dropdown'lar tetikler)
+function changeFilter() {
+    // 1. HTML'den değerleri al
+    currentFilters.genre = document.getElementById('filter-genre').value;
+    currentFilters.year = document.getElementById('filter-year').value;
+    currentFilters.sort = document.getElementById('sort-by').value;
+
+    // 2. Filtre değişince sayfa 1'e dönmeli
+    currentFilters.page = 1;
+
+    // 3. Yeniden yükle
+    loadAllMovies();
+}
+
+// Sayfa değişince (Önceki/Sonraki butonları tetikler)
+function changePage(direction) {
+    // direction: +1 (Sonraki) veya -1 (Önceki)
+    const newPage = currentFilters.page + direction;
+
+    // Sayfa 1'den küçük olamaz
+    if (newPage < 1) return;
+
+    // (Opsiyonel: Toplam sayfayı geçip geçmediğini de kontrol edebilirsin)
+
+    currentFilters.page = newPage;
+    loadAllMovies();
+
+    // Sayfa başına kaydır
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
 
 // --- UI EVENTS ---
 function toggleLike() {
@@ -414,7 +625,7 @@ document.addEventListener('DOMContentLoaded', () => {
     initAlphaBar();
 
     // Varsayılan filmi yükle
-    loadProduction(1);
+    loadAllMovies();
 
     // Modal dışına tıklayınca kapat
     document.getElementById('reviewModal').addEventListener('click', function(e) {

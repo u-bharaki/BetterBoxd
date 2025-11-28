@@ -1,6 +1,7 @@
 from flask import Flask, render_template, g, request, jsonify, session, redirect, url_for
 import sqlite3
 import os
+import uuid
 from pathlib import Path
 from typing import Optional
 
@@ -14,6 +15,8 @@ USERS_TABLE_NAME = "users"
 
 user_manager: Optional[UserManager] = None
 
+# ----- DATABASE CONNECTION -----
+
 def get_db_path():
     """Databases klasöründeki en güncel 'movies_*.db' dosyasını bulur."""
     base_dir = Path(__file__).parent
@@ -24,15 +27,14 @@ def get_db_path():
 
     db_files = list(db_dir.glob(f"{DB_NAME}_*.db"))
 
-    if not db_files:
-        fallback = base_dir / "betterboxd.db"
-        if fallback.exists():
-            return str(fallback)
+    fallback = base_dir / "betterboxd.db"
+    if fallback.exists():
+        return fallback
+    elif db_files:
+        latest_db = max(db_files, key=os.path.getmtime)
+        return str(latest_db)
+    else:
         return None
-
-    latest_db = max(db_files, key=os.path.getmtime)
-    return str(latest_db)
-
 
 def get_db():
     """Context Manager: Veritabanı bağlantısını g objesinde saklar ve döndürür."""
@@ -46,13 +48,13 @@ def get_db():
         db.row_factory = sqlite3.Row
     return db
 
-
 @app.teardown_appcontext
 def close_connection(exception):
     db = getattr(g, '_database', None)
     if db is not None:
         db.close()
 
+# ----- LOGIN - REGISTER -----
 
 def login_required(f):
     def wrap(*args, **kwargs):
@@ -63,14 +65,11 @@ def login_required(f):
     wrap.__name__ = f.__name__
     return wrap
 
-
-
 @app.route('/')
 def index_redirect():
     if 'user_id' in session:
         return redirect(url_for('index'))
     return redirect(url_for('login'))
-
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
@@ -90,7 +89,6 @@ def login():
             error = 'Hatalı kullanıcı adı veya şifre.'
 
     return render_template('login.html', error=error)
-
 
 @app.route('/register', methods=['GET', 'POST'])
 def register():
@@ -113,13 +111,11 @@ def register():
 
     return render_template('register.html', error=error)
 
-
 @app.route('/logout')
 def logout():
     """Kullanıcının oturumunu sonlandırır."""
     session.clear()
     return redirect(url_for('login'))
-
 
 @app.route('/index')
 @login_required
@@ -127,6 +123,7 @@ def index():
     """Ana Sayfa: Kullanıcı giriş yapmışsa SPA'yı (index.html) yükler."""
     return render_template('index.html', user=session)
 
+# ----- GET -----
 
 @app.route('/api/productions')
 def get_all_productions():
@@ -200,9 +197,10 @@ def get_all_productions():
         'current_page': page
     })
 
-@app.route('/api/production/<int:prod_id>')
+@app.route('/api/production/<string:prod_id>')
 @login_required
 def get_production_detail(prod_id):
+    print("prod_id", prod_id)
     db = get_db()
     production = db.execute('SELECT * FROM productions WHERE id = ?', (prod_id,)).fetchone()
 
@@ -234,8 +232,7 @@ def get_production_detail(prod_id):
     }
     return jsonify(response)
 
-
-@app.route('/api/production/<int:prod_id>/reviews')
+@app.route('/api/production/<string:prod_id>/reviews')
 @login_required
 def get_production_reviews(prod_id):
     db = get_db()
@@ -248,7 +245,6 @@ def get_production_reviews(prod_id):
     ''', (prod_id,)).fetchall()
 
     return jsonify([{'author': r['username'], 'score': r['score'], 'text': r['context']} for r in reviews])
-
 
 @app.route('/api/feed')
 @login_required
@@ -279,7 +275,6 @@ def get_feed():
         'production_id': row['prod_id']
     } for row in feed_items])
 
-
 @app.route('/api/profile')
 @login_required
 def get_profile():
@@ -306,6 +301,31 @@ def get_profile():
         }
     })
 
+@app.route('/api/my-lists')
+@login_required
+def get_my_lists():
+    db = get_db()
+    current_user_id = session['user_id']
+
+    lists = db.execute('''
+        SELECT id, name, production_count
+        FROM lists
+        WHERE user_id = ?
+        ORDER BY name ASC
+    ''', (current_user_id,)).fetchall()
+
+    lists_for_json = [dict(row) for row in lists]
+
+    # 2. PRINT: Lists'in son halini (JSON'a gidecek) yazdır
+    print("-" * 30)
+    print(f"[{session['username']}] kullanıcısının listeleri:")
+    import pprint  # Daha okunaklı yazdırmak için
+    pprint.pprint(lists_for_json)
+    print("-" * 30)
+
+    return jsonify([dict(row) for row in lists])
+
+# ----- ADD -----
 
 @app.route('/api/review', methods=['POST'])
 @login_required
@@ -323,6 +343,73 @@ def add_review():
         return jsonify({'success': True})
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/api/list/create', methods=['POST'])
+@login_required
+def add_list():
+    data = request.json
+    list_name = data['list_name']
+    if not list_name:
+        return jsonify({'success': False, 'error': 'List Name is required'})
+
+    db = get_db()
+    current_user_id = session['user_id']
+    print("current_user_id", current_user_id)
+    new_list_id = str(uuid.uuid4())
+    print("new_list_id", new_list_id)
+    try:
+        db.execute('''
+            INSERT INTO lists (id, name, user_id, production_count)
+            VALUES (?, ?, ?, 0)
+        ''', (new_list_id, list_name, current_user_id))
+        db.commit()
+        return jsonify({'success': True})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+# ----- DELETE -----
+
+@app.route('/api/list/<list_id>/delete', methods=['POST'])
+@login_required
+def delete_list(list_id):
+    db = get_db()
+    current_user_id = session['user_id']
+    list_id = str(list_id)
+
+    check = db.execute('SELECT 1 FROM lists WHERE id = ? AND user_id = ?', (list_id, current_user_id)).fetchone()
+    if not check:
+        return jsonify({'success': False, 'error': 'Unauthorized transaction'})
+
+    try:
+        db.execute('DELETE FROM productions_in_lists WHERE list_id = ? AND user_id = ?', (list_id, current_user_id))
+        db.execute('Delete FROM lists WHERE id = ? AND user_id = ?', (list_id, current_user_id))
+        db.commit()
+        return jsonify({'success': True})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+# ----- UPDATE -----
+
+@app.route('/api/list/<list_id>/update', methods=['POST'])
+@login_required
+def update_list(list_id):
+    data = request.json
+    new_name = data.get('name')
+    current_user_id = session['user_id']
+    db = get_db()
+
+    if not new_name:
+        return jsonify({'success': False, 'error': 'List name is required'})
+
+    try:
+        db.execute('''
+            UPDATE lists SET name = ?
+            WHERE id = ? AND user_id = ?
+        ''', (new_name, list_id, current_user_id))
+        db.commit()
+        return jsonify({'success': True})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
 
 
 if __name__ == '__main__':

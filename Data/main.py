@@ -6,6 +6,7 @@ import pandas as pd
 import sqlite3
 import time
 import sys
+import uuid
 
 API_KEYS_FILE = "api_keys.txt"
 SAVE_FILE = "savedene"
@@ -29,7 +30,7 @@ LISTS_TABLE_NAME = "lists"
 PRODUCTIONS_IN_LISTS_TABLE_NAME = "productions_in_lists"
 REVIEWS_TABLE_NAME = "reviews"
 
-APPROX_FILM_COUNT = 100_000
+APPROX_FILM_COUNT = 200
 TOTAL_QUERY_COUNT = 0
 current_key_index = 0
 START_TERM_INDEX = 0
@@ -365,7 +366,7 @@ def connect_sqlite():
 def create_tables(cursor):
     cursor.execute(f"""
     CREATE TABLE IF NOT EXISTS {PRODUCTIONS_TABLE_NAME} (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        id TEXT PRIMARY KEY,
         title TEXT NOT NULL,
         country TEXT,
         language TEXT,
@@ -387,7 +388,7 @@ def create_tables(cursor):
 
     cursor.execute(f"""
     CREATE TABLE IF NOT EXISTS {CONTRIBUTORS_TABLE_NAME} (
-        production_id INTEGER NOT NULL,
+        production_id TEXT NOT NULL,
         first_name TEXT NOT NULL,
         last_name TEXT NOT NULL,
         role TEXT CHECK(role IN ('director', 'writer', 'actor')),
@@ -398,7 +399,7 @@ def create_tables(cursor):
 
     cursor.execute(f"""
     CREATE TABLE IF NOT EXISTS {USERS_TABLE_NAME} (
-        id INTEGER PRIMARY KEY,
+        id TEXT PRIMARY KEY,
         username TEXT NOT NULL,
         password TEXT NOT NULL,
         email TEXT NOT NULL,
@@ -411,8 +412,8 @@ def create_tables(cursor):
 
     cursor.execute(f"""
     CREATE TABLE IF NOT EXISTS {FOLLOWS_TABLE_NAME} (
-        follower_user_id INTEGER NOT NULL,
-        followed_user_id INTEGER NOT NULL,
+        follower_user_id TEXT NOT NULL,
+        followed_user_id TEXT NOT NULL,
         followed_at TIMESTAMP NOT NULL DEFAULT (datetime('now', '+3 hour')),
         
         CONSTRAINT fk_follower_user_id FOREIGN KEY (follower_user_id) REFERENCES {USERS_TABLE_NAME}(id) ON DELETE CASCADE,
@@ -422,9 +423,9 @@ def create_tables(cursor):
 
     cursor.execute(f"""
     CREATE TABLE IF NOT EXISTS {LISTS_TABLE_NAME} (
-        id INTEGER PRIMARY KEY,
+        id TEXT PRIMARY KEY,
         name TEXT NOT NULL,
-        user_id INTEGER NOT NULL,
+        user_id TEXT NOT NULL,
         production_count INTEGER NOT NULL,
         
         CONSTRAINT fk_{LISTS_TABLE_NAME}_user_id FOREIGN KEY (user_id) REFERENCES {USERS_TABLE_NAME}(id) ON DELETE CASCADE
@@ -433,9 +434,9 @@ def create_tables(cursor):
 
     cursor.execute(f"""
     CREATE TABLE IF NOT EXISTS {PRODUCTIONS_IN_LISTS_TABLE_NAME} (
-        production_id INTEGER NOT NULL,
-        list_id INTEGER NOT NULL,
-        user_id INTEGER NOT NULL,
+        production_id TEXT NOT NULL,
+        list_id TEXT NOT NULL,
+        user_id TEXT NOT NULL,
         
         CONSTRAINT fk_{PRODUCTIONS_IN_LISTS_TABLE_NAME}_production_id FOREIGN KEY (production_id) REFERENCES {PRODUCTIONS_TABLE_NAME}(id) ON DELETE CASCADE,
         CONSTRAINT fk_{PRODUCTIONS_IN_LISTS_TABLE_NAME}_list_id FOREIGN KEY (list_id) REFERENCES {LISTS_TABLE_NAME}(id) ON DELETE CASCADE,
@@ -446,11 +447,11 @@ def create_tables(cursor):
 
     cursor.execute(f"""
     CREATE TABLE IF NOT EXISTS {REVIEWS_TABLE_NAME} (
-        id INTEGER PRIMARY KEY,
+        id TEXT PRIMARY KEY,
         context TEXT NOT NULL,
         score REAL NOT NULL,
-        production_id INTEGER NOT NULL,
-        user_id INTEGER NOT NULL,
+        production_id TEXT NOT NULL,
+        user_id TEXT NOT NULL,
         
         CONSTRAINT fk_{REVIEWS_TABLE_NAME}_production_id FOREIGN KEY (production_id) REFERENCES {PRODUCTIONS_TABLE_NAME}(id) ON DELETE CASCADE,
         CONSTRAINT fk_{REVIEWS_TABLE_NAME}_user_id FOREIGN KEY (user_id) REFERENCES {USERS_TABLE_NAME}(id) ON DELETE CASCADE
@@ -458,6 +459,8 @@ def create_tables(cursor):
     """)
 
 def insert_to_sql(data, conn, cursor):
+    Title = data.get("Title")
+
     years = data.get("Year")
     if len(years) == 4:
         start_year = years
@@ -471,6 +474,17 @@ def insert_to_sql(data, conn, cursor):
     else:
         start_year = ""
         end_year = ""
+
+    cursor.execute(
+        f"SELECT 1 FROM {PRODUCTIONS_TABLE_NAME} WHERE Title = ? AND start_year = ? AND end_year = ?;",
+        (Title, start_year, end_year)
+    )
+
+    film_exists = cursor.fetchone()
+
+    if film_exists:
+        print(f"[WARNING] {Title} already exists")
+        return
 
     runtime = data.get("Runtime")
     runtime = runtime.split(" ")
@@ -535,8 +549,11 @@ def insert_to_sql(data, conn, cursor):
     else:
         Type = data.get("Type")
 
+    production_id = str(uuid.uuid4())
+
     cursor.execute(f"""
     INSERT INTO {PRODUCTIONS_TABLE_NAME} (
+        id,
         title,
         country,
         language,
@@ -552,10 +569,9 @@ def insert_to_sql(data, conn, cursor):
         rated,
         runtime,
         type)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        """, (data.get("Title"), Country, Language, Poster, totalSeasons, start_year, end_year, wins, nominations, imdbRating, imdbVotes, Plot, Rated, runtime, Type))
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """, (production_id, Title, Country, Language, Poster, totalSeasons, start_year, end_year, wins, nominations, imdbRating, imdbVotes, Plot, Rated, runtime, Type))
 
-    production_id = cursor.lastrowid
     directors = data.get("Director")
     if directors:
         directors_splitted = directors.split(",")
