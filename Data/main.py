@@ -7,6 +7,7 @@ import sqlite3
 import time
 import sys
 import uuid
+import re
 
 API_KEYS_FILE = "api_keys.txt"
 SAVE_FILE = "savedene"
@@ -30,7 +31,7 @@ LISTS_TABLE_NAME = "lists"
 PRODUCTIONS_IN_LISTS_TABLE_NAME = "productions_in_lists"
 REVIEWS_TABLE_NAME = "reviews"
 
-APPROX_FILM_COUNT = 200
+APPROX_FILM_COUNT = 100_000
 TOTAL_QUERY_COUNT = 0
 current_key_index = 0
 START_TERM_INDEX = 0
@@ -251,7 +252,7 @@ def get_films(approx_film_count, conn, cursor):
 
                 if data.get("Response") == "True":
 
-                    n = 0
+                    search_results = data.get("Search", [])
                     global ITEM_INDEX
                     for item_index in range(0, len(data.get("Search", []))):
                         ITEM_INDEX = item_index
@@ -272,6 +273,7 @@ def get_films(approx_film_count, conn, cursor):
                             save_session()
                             conn.commit()
                             continue
+
                         print(f"[INFO - FILM] {query_count} - {details}")
 
                         if details.get("Error") == "Request limit reached!":
@@ -293,8 +295,7 @@ def get_films(approx_film_count, conn, cursor):
                         if details.get("Response") == "True":
                             insert_to_sql(details, conn, cursor)
                             all_data.append(details)
-                            n += 1
-                    if n >= 10:
+                    if len(search_results) >= 10:
                         PAGE_INDEX += 1
                     else:
                         break
@@ -382,6 +383,9 @@ def create_tables(cursor):
         rated TEXT,
         runtime INTEGER,
         type TEXT CHECK(type IN ('movie', 'series')),
+        genres TEXT,
+        site_rating REAL DEFAULT 0,
+        site_likes INTEGER DEFAULT 0,
         added_at TIMESTAMP NOT NULL DEFAULT (datetime('now', '+3 hour'))
     )
     """)
@@ -459,21 +463,23 @@ def create_tables(cursor):
     """)
 
 def insert_to_sql(data, conn, cursor):
+
     Title = data.get("Title")
 
-    years = data.get("Year")
-    if len(years) == 4:
-        start_year = years
-        end_year = years
-    elif len(years) == 5:
-        start_year = years[:4]
-        end_year = years[:4]
-    elif len(years) > 5:
-        start_year = years[:4]
-        end_year = years[5:9]
-    else:
-        start_year = ""
-        end_year = ""
+    year_str = data.get("Year", "")
+    years_found = re.findall(r"(\d{4})", year_str)
+    start_year = ""
+    end_year = ""
+
+    if len(years_found) == 1:
+        start_year = years_found[0]
+        if "-" not in year_str:
+            end_year = years_found[0]
+        else:
+            end_year = ""
+    elif len(years_found) >= 2:
+        start_year = years_found[0]
+        end_year = years_found[1]
 
     cursor.execute(
         f"SELECT 1 FROM {PRODUCTIONS_TABLE_NAME} WHERE Title = ? AND start_year = ? AND end_year = ?;",
@@ -486,29 +492,41 @@ def insert_to_sql(data, conn, cursor):
         print(f"[WARNING] {Title} already exists")
         return
 
-    runtime = data.get("Runtime")
-    runtime = runtime.split(" ")
-    if len(runtime) > 0 and runtime[0] != "N/A":
-        runtime = runtime[0]
-    else:
-        runtime = ""
-    awards = data.get("Awards")
+    runtime_str = data.get("Runtime", "N/A")
+    runtime = 0
+    if runtime_str != "N/A":
+        parts = runtime_str.split(" ")
+        if parts and parts[0].isdigit():
+            runtime = int(parts[0])
 
+    awards = data.get("Awards", "N/A")
     wins = 0
     nominations = 0
+
     if awards and awards != "N/A":
-        parts = awards.split("&")
-        for part in parts:
-            part = part.strip()
-            number_str = part.split(" ")[0]
-            try:
-                number = int(number_str)
-            except ValueError:
-                number = 0
-            if "win" in part.lower():
-                wins = number
-            elif "nomination" in part.lower():
-                nominations = number
+
+        if "total" in awards.lower():
+            wins_match = re.search(r"(\d+)\s+win", awards, re.IGNORECASE)
+            if wins_match:
+                wins = int(wins_match.group(1))
+
+            noms_match = re.search(r"(\d+)\s+nomination", awards, re.IGNORECASE)
+            if noms_match:
+                nominations = int(noms_match.group(1))
+
+        else:
+
+            won_matches = re.findall(r"won\s+(\d+)", awards, re.IGNORECASE)
+            wins_text_matches = re.findall(r"(\d+)\s+win", awards, re.IGNORECASE)
+
+            for w in won_matches + wins_text_matches:
+                wins += int(w)
+
+            nom_for_matches = re.findall(r"nominated\s+for\s+(\d+)", awards, re.IGNORECASE)
+            noms_text_matches = re.findall(r"(\d+)\s+nomination", awards, re.IGNORECASE)
+
+            for n in nom_for_matches + noms_text_matches:
+                nominations += int(n)
 
         #print(f"Start year: {start_year}  End year: {end_year}  Runtime: {runtime}  Awards: {awards}  Wins: {wins}")
 
@@ -524,18 +542,28 @@ def insert_to_sql(data, conn, cursor):
         Poster = ""
     else:
         Poster = data.get("Poster")
-    if data.get("totalSeasons") == "N/A":
-        totalSeasons = 0
-    else:
-        totalSeasons = data.get("totalSeasons")
-    if data.get("imdbRating") == "N/A" or not data.get("imdbRating"):
-        imdbRating = 0
-    else:
-        imdbRating = data.get("imdbRating")
-    if data.get("imdbVotes") == "N/A":
-        imdbVotes = 0
-    else:
-        imdbVotes = data.get("imdbVotes")
+
+    totalSeasons = 0
+    ts_str = data.get("totalSeasons", "N/A")
+    if ts_str != "N/A" and ts_str.isdigit():
+        totalSeasons = int(ts_str)
+
+    imdbRating = 0.0
+    ir_str = data.get("imdbRating", "N/A")
+    if ir_str != "N/A":
+        try:
+            imdbRating = float(ir_str)
+        except ValueError:
+            imdbRating = 0.0
+
+    imdbVotes = 0
+    iv_str = data.get("imdbVotes", "N/A")
+    if iv_str != "N/A":
+        try:
+            imdbVotes = int(iv_str.replace(",", ""))
+        except ValueError:
+            imdbVotes = 0
+
     if data.get("Plot") == "N/A":
         Plot = ""
     else:
@@ -548,6 +576,12 @@ def insert_to_sql(data, conn, cursor):
         Type = "movie"
     else:
         Type = data.get("Type")
+
+    genres_data = data.get("Genre", "N/A")
+    if genres_data == "N/A":
+        genres = ""
+    else:
+        genres = genres_data
 
     production_id = str(uuid.uuid4())
 
@@ -568,9 +602,13 @@ def insert_to_sql(data, conn, cursor):
         plot,
         rated,
         runtime,
-        type)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        """, (production_id, Title, Country, Language, Poster, totalSeasons, start_year, end_year, wins, nominations, imdbRating, imdbVotes, Plot, Rated, runtime, Type))
+        type,
+        genres,
+        site_rating,
+        site_likes
+        )
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """, (production_id, Title, Country, Language, Poster, totalSeasons, start_year, end_year, wins, nominations, imdbRating, imdbVotes, Plot, Rated, runtime, Type, genres, 0, 0))
 
     directors = data.get("Director")
     if directors:
