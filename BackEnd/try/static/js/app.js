@@ -333,7 +333,6 @@ async function loadMyLists() {
         const response = await fetch('/api/my-lists')
         if (!response.ok) throw new Error("Sunucu hatası");
         const lists = await response.json()
-        console.log("Burdayım");
         if (lists.length === 0) {
             container.innerHTML = `
                 <div class="col-span-full text-center py-10 bg-[#2C343A] rounded-xl border border-dashed border-gray-600">
@@ -343,7 +342,6 @@ async function loadMyLists() {
             `;
             return;
         }
-        console.log("Yok Burdayım");
 
         let html = '';
         let hasRendered = false;
@@ -356,7 +354,9 @@ async function loadMyLists() {
                 }
 
                 html += `
-                    <div class="group relative bg-[#2C343A] p-6 rounded-xl border border-[#3A424A] hover:border-[#FFC107] transition-all hover:shadow-lg hover:shadow-yellow-900/10">
+                    <div class="group relative bg-[#2C343A] p-6 rounded-xl border border-[#3A424A] hover:border-[#FFC107] transition-all hover:shadow-lg hover:shadow-yellow-900/10"
+                        onclick="handleListCardClick(event, '${list.id}')">
+                        
                         <!-- 1. SİLME BUTONU (Sağ Üst Köşe - Çarpı) -->
                         <button onclick="deleteList('${list.id}')" 
                                 class="absolute top-3 right-3 text-gray-500 hover:text-red-500 hover:bg-red-900/20 w-8 h-8 rounded-full flex items-center justify-center transition opacity-0 group-hover:opacity-100"
@@ -506,12 +506,9 @@ async function deleteList(listId) {
 }
 
 async function createNewList() {
-        console.log("111111");
     const name = prompt("Yeni listenin adı ne olsun?");
-        console.log("2222222");
 
     if (!name) return;
-        console.log("333333");
 
     try {
         const response = await fetch('/api/list/create', {
@@ -520,10 +517,8 @@ async function createNewList() {
             body: JSON.stringify({ list_name: name})
         });
         const result = await response.json();
-        console.log("444444444");
 
         if (result.success) {
-        console.log("5555555555");
 
             loadMyLists();
         } else {
@@ -532,6 +527,142 @@ async function createNewList() {
     } catch (e) {
         console.error(e);
     }
+}
+
+async function loadListDetails(listId) {
+    navigateTo('list-detail');
+
+    const titleEl = document.getElementById('detail-list-name');
+    const countEl = document.getElementById('detail-list-count');
+    const gridEl = document.getElementById('list-detail-grid');
+
+    titleEl.textContent = "Yükleniyor...";
+    gridEl.innerHTML = '';
+
+    try {
+        const response = await fetch(`/api/list/${listId}/productions`);
+        const data = await response.json();
+
+        titleEl.textContent = data.list_name;
+        countEl.textContent = `${data.productions.length} Yapım`;
+
+        if (data.productions.length === 0) {
+            gridEl.innerHTML = '<p class="col-span-full text-gray-500 text-center py-10">Bu listede henüz yapım yok.</p>';
+            return;
+        }
+
+        data.productions.forEach(prod => {
+            const poster = prod.poster || 'https://via.placeholder.com/200x300';
+
+            gridEl.innerHTML += `
+                <div class="group relative">
+                    <!-- Film Kartı -->
+                    <div class="cursor-pointer" onclick="loadProduction('${prod.id}'); navigateTo('production')">
+                        <img src="${poster}" class="w-full aspect-[2/3] object-cover rounded-lg border border-[#3A424A] hover:border-[#FFC107] transition">
+                        <h4 class="text-white text-sm font-bold mt-2 truncate">${prod.title}</h4>
+                        <span class="text-gray-500 text-xs">${prod.year}</span>
+                    </div>
+
+                    <!-- Hızlı Menü (3 Nokta) - İstersen buraya da modal açma özelliği koyabilirsin -->
+                    <button onclick="openListSelectionModal('${prod.id}')" 
+                            class="absolute top-2 right-2 bg-black/60 text-white w-8 h-8 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 hover:bg-[#FFC107] hover:text-black transition backdrop-blur-sm z-10">
+                        +
+                    </button>
+                </div>
+            `;
+        });
+    } catch (e) {
+        console.error(e);
+        titleEl.textContent = "Hata";
+    }
+}
+
+async function openListSelectionModal(prodId) {
+    const targetProdId = prodId || window.currentProductionId;
+    window.activeModalProductionId = targetProdId;
+
+    const modal = document.getElementById('listSelectionModal');
+    const container = document.getElementById('list-selection-container');
+
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+    container.innerHTML = '<p class="text-gray-400 text-center">Listeler getiriliyor...</p>';
+
+    try {
+        const response = await fetch(`/api/list/${targetProdId}/lists_status`);
+        const lists = await response.json();
+        container.innerHTML = '';
+
+        if (lists.length === 0) {
+            container.innerHTML = '<p class="text-gray-500 text-center text-sm">Hiç listen yok. Aşağıdan oluşturabilirsin.</p>';
+        }
+
+        lists.forEach(list => {
+            const isChecked = list.has_production ? 'checked' : '';
+
+            container.innerHTML += `
+                <label class="flex items-center justify-between p-3 bg-[#1C2329] rounded-lg hover:bg-[#3A424A] cursor-pointer transition border border-transparent hover:border-gray-600">
+                    <span class="text-white font-medium truncate pr-4">${list.name}</span>
+                    <input type="checkbox" 
+                           class="w-5 h-5 accent-[#FFC107] rounded cursor-pointer" 
+                           ${isChecked}
+                           onchange="toggleProductionInList('${list.id}', '${targetProdId}', this)">
+                </label>
+            `;
+        });
+    } catch (e) {
+        console.error(e);
+        container.innerHTML = '<p class="text-red-500 text-center">Hata oluştu.</p>';
+    }
+}
+
+async function toggleProductionInList(listId, prodId, checkbox) {
+    checkbox.disabled = true;
+
+    try {
+        const response = await fetch(`/api/list/${listId}/toggle_production`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ production_id: prodId })
+        });
+
+        const result = await response.json();
+
+        if (!result.success) {
+            alert("İşlem başarısız: " + result.error);
+            checkbox.checked = !checkbox.checked;
+        } else {
+            console.log(result.action === 'added' ? 'Eklendi' : 'Çıkarıldı');
+        }
+    } catch (e) {
+        console.error(e);
+        checkbox.checked = !checkbox.checked;
+    } finally {
+        checkbox.disabled = false;
+    }
+}
+
+function closeListModal() {
+    const modal = document.getElementById('listSelectionModal');
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
+}
+
+// Modal içinden hızlı liste oluşturma
+async function createNewListFromModal() {
+    const name = prompt("Yeni liste adı:");
+    if(!name) return;
+
+    try {
+        const response = await fetch('/api/list/create', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name: name })
+        });
+        if(response.ok) {
+            openListSelectionModal(window.activeModalProductionId);
+        }
+    } catch(e) { console.error(e); }
 }
 
 // Filtre değişince (Dropdown'lar tetikler)
@@ -565,6 +696,15 @@ function changePage(direction) {
     window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
+function handleListCardClick(event, listId) {
+    // Tıklanan eleman (event.target) bir butonun veya inputun içindeyse dur.
+    if (event.target.closest('button') || event.target.closest('input')) {
+        return;
+    }
+
+    // Değilse, detay sayfasına git
+    loadListDetails(listId);
+}
 
 // --- UI EVENTS ---
 function toggleLike() {

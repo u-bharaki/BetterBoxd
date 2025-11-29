@@ -31,7 +31,10 @@
                             </div>
                         </div>
                         <button class="action-btn bg-[#2C343A] text-[#E0E0E0] px-4 py-2 rounded-lg font-semibold hover:bg-[#3A424A] hover:text-[#FFC107] transition border border-[#3A424A]" id="likeBtn" onclick="toggleLike()">♡ Beğen</button>
-                        <button class="action-btn bg-[#2C343A] text-[#E0E0E0] px-4 py-2 rounded-lg font-semibold hover:bg-[#3A424A] hover:text-[#FFC107] transition border border-[#3A424A]" id="watchlistBtn" onclick="toggleWatchlist()">+ İzleme Listesi</button>
+                        <button class="action-btn bg-[#2C343A] text-[#E0E0E0] px-4 py-2 rounded-lg font-semibold hover:bg-[#3A424A] hover:text-[#FFC107] transition border border-[#3A424A]"
+                                onclick="openListSelectionModal()">
+                            + Listeye Ekle
+                        </button>
                         <button class="action-btn primary bg-[#FFC107] text-[#14181C] px-6 py-2 rounded-lg font-bold hover:bg-[#FFD54F] transition shadow-lg" onclick="openModal()">+ İncele</button>
                     </div>
                 </div>
@@ -84,7 +87,27 @@
         </div>
     </div>
 
-    <!-- 4. SAYFA: FILMLER -->
+    <!-- 4. SAYFA: LISTE DETAY -->
+    <div id="list-detail-page" class="page hidden">
+        <div class="simple-page max-w-[1400px]">
+            <div class="mb-8 border-b border-[#3A424A] pb-4 flex justify-between items-end">
+                <div>
+                    <button onclick="navigateTo('lists')" class="text-gray-400 hover:text-white mb-2 flex items-center gap-1 text-sm transition">
+                        ← Listelerime Dön
+                    </button>
+                    <h1 class="text-4xl font-bold text-white" id="detail-list-name">Liste Adı Yükleniyor...</h1>
+                    <p class="text-gray-500 mt-1" id="detail-list-count">0 Yapım</p>
+                </div>
+            </div>
+
+            <!-- Filmlerin Listeleneceği Izgara -->
+            <div id="list-detail-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-6">
+                <!-- JS dolduracak -->
+            </div>
+        </div>
+    </div>
+
+    <!-- 5. SAYFA: FILMLER -->
     <div id="films-page" class="page active">
         <div class="flex justify-between items-center mb-8">
             <h1 class="text-3xl font-bold m-0 border-l-4 border-[#FFC107] pl-4">Filmler</h1>
@@ -120,7 +143,7 @@
         </div>
     </div>
 
-    <!-- 5. SAYFA: PROFIL -->
+    <!-- 6. SAYFA: PROFIL -->
     <div id="profile-page" class="page hidden">
         <div class="production-header h-[300px] relative mb-8">
             <img src="https://via.placeholder.com/1500x500/2C343A/333" class="backdrop w-full h-full object-cover rounded-xl opacity-50">
@@ -135,6 +158,24 @@
                     <div class="text-center"><div class="text-2xl font-bold text-white" id="stat-lists">0</div><div class="text-xs text-gray-400 uppercase tracking-wider">Liste</div></div>
                     <div class="text-center"><div class="text-2xl font-bold text-white" id="stat-followers">0</div><div class="text-xs text-gray-400 uppercase tracking-wider">Takipçi</div></div>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- LISTE SEÇİM MODALI (Listeye Ekle/Çıkar) -->
+    <div class="modal fixed inset-0 bg-black/80 z-[2100] hidden items-center justify-center backdrop-blur-sm transition-opacity" id="listSelectionModal">
+        <div class="modal-content bg-[#2C343A] p-6 rounded-2xl max-w-sm w-[90%] shadow-2xl border border-[#3A424A] relative">
+            <button onclick="closeListModal()" class="absolute top-4 right-4 text-gray-400 hover:text-white text-2xl">&times;</button>
+
+            <h3 class="text-xl font-bold text-white mb-4 border-b border-[#3A424A] pb-2">Listelere Ekle</h3>
+
+            <!-- Listelerin Checkbox olarak geleceği yer -->
+            <div id="list-selection-container" class="flex flex-col gap-2 max-h-[300px] overflow-y-auto custom-scrollbar">
+                <p class="text-gray-500 text-sm">Yükleniyor...</p>
+            </div>
+
+            <div class="mt-4 pt-4 border-t border-[#3A424A] text-center">
+                <button onclick="createNewListFromModal()" class="text-[#FFC107] text-sm font-bold hover:underline">+ Yeni Liste Oluştur</button>
             </div>
         </div>
     </div>

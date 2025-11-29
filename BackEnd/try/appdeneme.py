@@ -200,7 +200,6 @@ def get_all_productions():
 @app.route('/api/production/<string:prod_id>')
 @login_required
 def get_production_detail(prod_id):
-    print("prod_id", prod_id)
     db = get_db()
     production = db.execute('SELECT * FROM productions WHERE id = ?', (prod_id,)).fetchone()
 
@@ -313,17 +312,67 @@ def get_my_lists():
         WHERE user_id = ?
         ORDER BY name ASC
     ''', (current_user_id,)).fetchall()
-
     lists_for_json = [dict(row) for row in lists]
-
-    # 2. PRINT: Lists'in son halini (JSON'a gidecek) yazdır
-    print("-" * 30)
-    print(f"[{session['username']}] kullanıcısının listeleri:")
-    import pprint  # Daha okunaklı yazdırmak için
-    pprint.pprint(lists_for_json)
-    print("-" * 30)
-
     return jsonify([dict(row) for row in lists])
+
+@app.route('/api/list/<list_id>/productions')
+@login_required
+def get_list_details(list_id):
+    db = get_db()
+    current_user_id = session['user_id']
+
+    productions = db.execute('''
+        SELECT p.id, p.title, p.start_year, p.poster_link, p.imdb_rating
+        FROM productions as p 
+        JOIN productions_in_lists as pl ON p.id = pl.production_id
+        WHERE pl.list_id = ? AND pl.user_id = ?
+        GROUP BY p.id
+        ORDER BY p.title ASC
+    ''', (list_id, current_user_id)).fetchall()
+
+    list_info = db.execute('SELECT name FROM lists WHERE id = ? AND user_id = ?', (list_id, current_user_id)).fetchone()
+
+    return jsonify({
+        'list_name': list_info['name'] if list_info else "Unknown List",
+        'productions': [{
+            'id': row['id'],
+            'title': row['title'],
+            'year': row['start_year'],
+            'poster': row['poster_link'],
+            'rating': round(row['imdb_rating'], 1) if row['imdb_rating'] else 0
+        } for row in productions]
+    })
+
+@app.route('/api/list/<production_id>/lists_status')
+@login_required
+def get_production_lists_status(production_id):
+    try:
+        db = get_db()
+        current_user_id = session['user_id']
+
+        query = '''
+            SELECT
+                L.id,
+                L.name,
+                CASE
+                    WHEN PL.list_id IS NOT NULL THEN 1
+                    ELSE 0
+                END as has_production
+            FROM lists L
+            LEFT JOIN productions_in_lists as PL 
+                ON L.id = PL.list_id AND PL.production_id = ?
+            WHERE L.user_id = ?
+            ORDER BY L.name ASC
+        '''
+        results = db.execute(query, (production_id, current_user_id)).fetchall()
+        return jsonify([{
+            'id': row['id'],
+            'name': row['name'],
+            'has_production': bool(row['has_production'])
+        } for row in results])
+    except Exception as e:
+        print(f"LİSTE STATUS HATASI: {e}")
+        return jsonify({'error': str(e), 'success': False})
 
 # ----- ADD -----
 
@@ -354,9 +403,7 @@ def add_list():
 
     db = get_db()
     current_user_id = session['user_id']
-    print("current_user_id", current_user_id)
     new_list_id = str(uuid.uuid4())
-    print("new_list_id", new_list_id)
     try:
         db.execute('''
             INSERT INTO lists (id, name, user_id, production_count)
@@ -392,7 +439,7 @@ def delete_list(list_id):
 
 @app.route('/api/list/<list_id>/update', methods=['POST'])
 @login_required
-def update_list(list_id):
+def update_list_name(list_id):
     data = request.json
     new_name = data.get('name')
     current_user_id = session['user_id']
@@ -411,6 +458,35 @@ def update_list(list_id):
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)})
 
+@app.route('/api/list/<list_id>/toggle_production', methods=['POST'])
+@login_required
+def toggle_production_in_list(list_id):
+    data = request.json
+    production_id = data['production_id']
+    current_user_id = session['user_id']
+    db = get_db()
+
+    # Authorization and existence control for list
+    check_list = db.execute('SELECT 1 FROM lists WHERE id = ? AND user_id = ?', (list_id, current_user_id)).fetchone()
+    if not check_list:
+        return jsonify({'success': False, 'error': 'Unauthorized transaction or list does not exist'})
+    try:
+        # Check if list includes the production
+        exists = db.execute('SELECT 1 FROM productions_in_lists WHERE list_id = ? AND production_id = ?', (list_id, production_id)).fetchone()
+
+        # If exists, remove
+        if exists:
+            db.execute('DELETE FROM productions_in_lists WHERE list_id = ? AND production_id = ?', (list_id, production_id))
+            action = "removed"
+            db.execute('UPDATE lists SET production_count = production_count - 1 WHERE id = ? AND user_id = ?', (list_id, current_user_id))
+        else:
+            db.execute(f'INSERT INTO productions_in_lists (list_id, production_id, user_id) VALUES (?, ?, ?)', (list_id, production_id, current_user_id))
+            action = "added"
+            db.execute('UPDATE lists SET production_count = production_count + 1 WHERE id = ? AND user_id = ?', (list_id, current_user_id))
+        db.commit()
+        return jsonify({'success': True, 'action': action})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
 
 if __name__ == '__main__':
     path = get_db_path()
