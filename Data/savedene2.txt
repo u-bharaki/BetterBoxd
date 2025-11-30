@@ -1,0 +1,8 @@
+databases/movies_28-11-2025__23-08-12.db
+raw_excels/omdb_full_dataset_30-11-2025__20-36-11.xlsx
+logs/30-11-2025__20-36-11.log
+100001
+99
+1538
+37
+9

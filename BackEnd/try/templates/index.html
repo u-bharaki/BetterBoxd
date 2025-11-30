@@ -41,61 +41,48 @@
         </div>
     </section>
 
-        <!-- Tabs ve İçerik -->
-        <section class="content-section pb-32">
+    <section class="content-section pb-32">
+        <div class="tabs flex gap-8 border-b border-[#2C343A] mb-8">
+            <button class="tab-btn active text-[#FFC107] border-b-2 border-[#FFC107] py-4 font-bold transition outline-none"
+                    onclick="openTab(event, 'tab-overview')">
+                Genel Bakış
+            </button>
+            <button class="tab-btn text-gray-500 hover:text-gray-300 py-4 font-medium transition outline-none"
+                    onclick="openTab(event, 'tab-reviews')">
+                İncelemeler
+            </button>
+            <button class="tab-btn text-gray-500 hover:text-gray-300 py-4 font-medium transition outline-none"
+                    onclick="openTab(event, 'tab-lists')">
+                Listeler
+            </button>
+            <button class="tab-btn text-gray-500 hover:text-gray-300 py-4 font-medium transition outline-none"
+                    onclick="openTab(event, 'tab-related')">
+                İlgili Yapımlar
+            </button>
+        </div>
 
-            <!-- TAB BUTONLARI -->
-            <div class="tabs flex gap-8 border-b border-[#2C343A] mb-8">
-                <button class="tab-btn active text-[#FFC107] border-b-2 border-[#FFC107] py-4 font-bold transition outline-none"
-                        onclick="openTab(event, 'tab-overview')">
-                    Genel Bakış
-                </button>
-                <button class="tab-btn text-gray-500 hover:text-gray-300 py-4 font-medium transition outline-none"
-                        onclick="openTab(event, 'tab-reviews')">
-                    İncelemeler
-                </button>
-                <button class="tab-btn text-gray-500 hover:text-gray-300 py-4 font-medium transition outline-none"
-                        onclick="openTab(event, 'tab-lists')">
-                    Listeler
-                </button>
-                <button class="tab-btn text-gray-500 hover:text-gray-300 py-4 font-medium transition outline-none"
-                        onclick="openTab(event, 'tab-related')">
-                    İlgili Yapımlar
-                </button>
+        <div id="tab-overview" class="tab-content block">
+            <div class="plot text-lg leading-relaxed text-gray-300 mb-10 font-serif max-w-4xl">
+                Özet yükleniyor...
             </div>
-
-            <!-- İÇERİKLER -->
-
-            <!-- 1. Genel Bakış -->
-            <div id="tab-overview" class="tab-content block">
-                <div class="plot text-lg leading-relaxed text-gray-300 mb-10 font-serif max-w-4xl">
-                    Özet yükleniyor...
-                </div>
-
-                <h2 class="section-title text-2xl font-bold text-white mb-6 border-l-4 border-[#FFC107] pl-4">Oyuncular</h2>
-                <div class="cast-grid grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-6">
-                    <!-- JS burayı dolduracak -->
-                </div>
+            <h2 class="section-title text-2xl font-bold text-white mb-6 border-l-4 border-[#FFC107] pl-4">Oyuncular</h2>
+            <div class="cast-grid grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-6">
             </div>
+        </div>
 
-            <!-- 2. İncelemeler -->
-            <div id="tab-reviews" class="tab-content hidden">
-                <h2 class="section-title text-2xl font-bold text-white mb-6">Son İncelemeler</h2>
-                <!-- JS burayı dolduracak -->
-            </div>
+        <div id="tab-reviews" class="tab-content hidden">
+            <h2 class="section-title text-2xl font-bold text-white mb-6">Son İncelemeler</h2>
+        </div>
 
-            <!-- 3. Listeler -->
-            <div id="tab-lists" class="tab-content hidden">
-                <p class="text-gray-500 py-10">Bu yapım henüz bir listeye eklenmemiş.</p>
-            </div>
+        <div id="tab-lists" class="tab-content hidden">
+            <p class="text-gray-500 py-10">Bu yapım henüz bir listeye eklenmemiş.</p>
+        </div>
 
-            <!-- 4. İlgili Yapımlar -->
-            <div id="tab-related" class="tab-content hidden">
-                <p class="text-gray-500 py-10">İlgili yapım bulunamadı.</p>
-            </div>
-
-        </section>
-    </div>
+        <div id="tab-related" class="tab-content hidden">
+            <p class="text-gray-500 py-10">İlgili yapım bulunamadı.</p>
+        </div>
+    </section>
+</div>
 
 <div id="feed-page" class="page hidden">
     <h1 class="text-3xl font-bold mb-8 border-l-4 border-[#FFC107] pl-4">Arkadaşların Ne İzliyor?</h1>
@@ -112,7 +99,6 @@
                 <span class="text-xl">+</span> Yeni Liste Oluştur
             </button>
         </div>
-
         <div id="lists-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         </div>
     </div>
@@ -129,7 +115,6 @@
                 <p class="text-gray-500 mt-1" id="detail-list-count">0 Yapım</p>
             </div>
         </div>
-
         <div id="list-detail-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-6">
         </div>
     </div>
@@ -175,19 +160,25 @@
 
 <div id="profile-page" class="page hidden">
     <div class="relative mb-24">
-        <div class="h-[280px] w-full overflow-hidden rounded-xl relative shadow-lg">
-            <img src="https://placehold.co/1500x500/2C343A/FFFFFF.png?text=BetterBoxd+Profile" class="w-full h-full object-cover opacity-50">
-            <div class="absolute inset-0 bg-gradient-to-t from-[#14181C] via-[#14181C]/40 to-transparent"></div>
+        <div class="h-[280px] w-full overflow-hidden rounded-xl relative shadow-2xl border-b border-[#2C343A]">
+            <img src="https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?q=80&w=1500&auto=format&fit=crop"
+                 class="w-full h-full object-cover opacity-60">
+            <div class="absolute inset-0 bg-gradient-to-t from-[#14181C] via-[#14181C]/50 to-transparent"></div>
         </div>
 
         <div class="absolute -bottom-16 left-8 flex items-end gap-6">
-            <div class="w-36 h-36 rounded-full border-[6px] border-[#14181C] bg-[#FFC107] flex items-center justify-center text-6xl font-bold text-[#14181C] shadow-2xl overflow-hidden relative group cursor-pointer">
+            <div class="w-36 h-36 rounded-full border-[6px] border-[#14181C] bg-[#FFC107] flex items-center justify-center text-6xl font-bold text-[#14181C] shadow-[0_10px_30px_rgba(0,0,0,0.5)] overflow-hidden relative group cursor-pointer z-20">
                 <span class="z-10">{{ session.get('username', 'U')[0].upper() }}</span>
             </div>
 
-            <div class="mb-4 text-shadow">
-                <h1 class="text-4xl font-bold text-white drop-shadow-md" id="profile-fullname">Yükleniyor...</h1>
-                <p class="text-gray-300 font-medium text-lg bg-black/30 px-2 rounded-md w-fit" id="profile-username">@...</p>
+            <div class="mb-8 z-10">
+                <h1 class="text-5xl font-extrabold text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]" id="profile-fullname">
+                    {{ session.get('fullname') or session.get('username') }}
+                </h1>
+
+                <p class="text-gray-100 font-semibold text-lg bg-black/60 px-4 py-1 rounded-full w-fit backdrop-blur-md mt-2 border border-white/20 shadow-lg tracking-wide" id="profile-username">
+                    @{{ session.get('username') }}
+                </p>
             </div>
         </div>
     </div>
