@@ -2,6 +2,14 @@
 window.currentProductionId = "c79d4af6-0214-44cb-b1d4-923b166c68da"; // Sayfada açık olan film (Varsayılan 1)
 window.activeProductionId = null; // Modalda işlem yapılan film
 
+// --- PLACEHOLDER LINKLERI ---
+const IMG_FALLBACK = {
+    POSTER: 'https://placehold.co/200x300?text=No+Poster',
+    BACKDROP: 'https://placehold.co/1500x500?text=No+Backdrop',
+    AVATAR: 'https://placehold.co/100x100?text=U',
+    SMALL_POSTER: 'https://placehold.co/50x75?text=No+Img'
+};
+
 // --- SAYFA YÖNLENDİRME (ROUTING) ---
 function navigateTo(pageName) {
     // Sayfaları Gizle/Göster
@@ -157,8 +165,14 @@ async function loadProduction(id) {
         document.querySelector('.plot').textContent = prod.plot;
 
         // Resimler
-        if(prod.poster) document.querySelector('.poster').src = prod.poster;
-        if(prod.backdrop) document.querySelector('.backdrop').src = prod.backdrop;
+        const posterEl = document.querySelector('.poster');
+        const backdropEl = document.querySelector('.backdrop');
+
+        posterEl.onerror = function () { this.src = IMG_FALLBACK.POSTER; };
+        backdropEl.onerror = function () { this.src = IMG_FALLBACK.BACKDROP; };
+
+        posterEl.src = prod.poster || IMG_FALLBACK.POSTER;
+        backdropEl.src = prod.backdrop || IMG_FALLBACK.BACKDROP;
 
         // Alt Verileri Çek
         loadCast(id);
@@ -177,10 +191,10 @@ async function loadAllMovies() {
 
     container.innerHTML = '<p style="color:#888;">Filmler yükleniyor...</p>';
 
-    // URL Parametrelerini Oluştur (örn: /api/productions?page=2&genre=Action&sort=rating)
+    // URL Parametrelerini Oluştur (örn: /api/productions?page=2&genres=Action&sort=rating)
     const params = new URLSearchParams({
         page: currentFilters.page,
-        genre: currentFilters.genre,
+        genres: currentFilters.genres,
         year: currentFilters.year,
         sort: currentFilters.sort,
         letter: currentFilters.letter
@@ -194,20 +208,22 @@ async function loadAllMovies() {
         container.innerHTML = '';
 
         if (data.productions.length === 0) {
-            container.innerHTML = '<p>Bu kriterlere uygun film bulunamadı.</p>';
+            container.innerHTML = '<p class="col-span-full text-gray-500 text-center">Bu kriterlere uygun film bulunamadı.</p>';
             return;
         }
 
         // Filmleri Ekrana Bas
         data.productions.forEach(movie => {
             // Poster yoksa varsayılan resim
-            const poster = movie.poster || 'https://via.placeholder.com/200x300?text=No+Poster';
+            const poster = movie.poster || IMG_FALLBACK.POSTER;
 
             const html = `
                 <div class="group relative cursor-pointer" onclick="loadProduction('${movie.id}'); navigateTo('production')">
                     <div class="relative overflow-hidden rounded-xl border border-[#3A424A] group-hover:border-[#FFC107] transition-all">
-                        <img src="${poster}" class="w-full aspect-[2/3] object-cover transform group-hover:scale-105 transition duration-300">
-                        
+                        <img src="${poster}" 
+                             onerror="this.onerror=null;this.src='${IMG_FALLBACK.POSTER}'"
+                             class="w-full aspect-[2/3] object-cover transform group-hover:scale-105 transition duration-300">
+                                                
                         <!-- Puan Rozeti -->
                         <div class="absolute top-2 right-2 bg-black/80 text-[#FFC107] px-2 py-1 rounded text-xs font-bold shadow-lg backdrop-blur-sm">
                             ★ ${movie.rating}
@@ -230,7 +246,7 @@ async function loadAllMovies() {
         if (indicator) indicator.textContent = `Sayfa ${data.current_page} / ${data.total_pages}`;
     } catch (error) {
         console.error('Filmler yüklenirken hata:', error);
-        container.innerHTML = '<p class="text-red-500">Yükleme hatası.</p>';
+        container.innerHTML = '<p class="text-red-500 col-span-full text-center">Yükleme hatası.</p>';
     }
 }
 
@@ -243,12 +259,13 @@ async function loadCast(id) {
 
     castList.forEach(actor => {
         grid.innerHTML += `
-            <div class="cast-card">
-                <div class="cast-image" style="background:#333; display:flex; align-items:center; justify-content:center; color:#777;">
-                    ${actor.name.charAt(0)}
+            <div class="cast-card text-center">
+                <div class="w-24 h-24 mx-auto mb-2 rounded-full overflow-hidden bg-[#333] border-2 border-[#3A424A]">
+                     <!-- Oyuncu resmi yoksa baş harfini gösterelim veya placeholder -->
+                     <img src="${IMG_FALLBACK.AVATAR}" onerror="this.src='${IMG_FALLBACK.AVATAR}'" class="w-full h-full object-cover">
                 </div>
-                <div class="cast-name">${actor.name}</div>
-                <div class="cast-role">Actor</div>
+                <div class="text-white font-bold text-sm">${actor.name}</div>
+                <div class="text-gray-500 text-xs">${actor.role}</div>
             </div>
         `;
     });
@@ -260,7 +277,7 @@ async function loadReviews(id) {
 
     // 2. Tab (İncelemeler) içeriğini bul
     const container = document.querySelectorAll('.tab-content')[1];
-    container.innerHTML = '<h2 class="section-title">Son İncelemeler</h2>';
+    container.innerHTML = '<h2 class="section-title text-2xl font-bold text-white mb-6">Son İncelemeler</h2>';
 
     if (reviews.length === 0) {
         container.innerHTML += '<p style="color:#888">Henüz inceleme yok.</p>';
@@ -273,17 +290,17 @@ async function loadReviews(id) {
         const starsStr = '★'.repeat(starCount) + '☆'.repeat(5 - starCount);
 
         container.innerHTML += `
-            <div class="review-card">
-                <div class="review-header">
-                    <div class="review-avatar">${r.author.charAt(0).toUpperCase()}</div>
-                    <div class="review-meta">
-                        <div class="review-author">${r.author}</div>
-                        <div class="review-date">
-                            <span class="stars" style="color:#FFC107">${starsStr}</span> (${r.score}/10)
-                        </div>
+            <div class="bg-[#2C343A] p-6 rounded-xl mb-4 border border-[#3A424A]">
+                <div class="flex items-center gap-4 mb-3">
+                    <div class="w-10 h-10 rounded-full bg-[#FFC107] flex items-center justify-center font-bold text-[#14181C]">
+                        ${r.author.charAt(0).toUpperCase()}
+                    </div>
+                    <div>
+                        <div class="text-white font-bold">${r.author}</div>
+                        <div class="text-[#FFC107] text-sm">${starsStr} (${r.score}/10)</div>
                     </div>
                 </div>
-                <div class="review-text">${r.text}</div>
+                <div class="text-gray-300 font-serif leading-relaxed">${r.text}</div>
             </div>
         `;
     });
@@ -291,34 +308,46 @@ async function loadReviews(id) {
 
 async function loadFeed() {
     const container = document.getElementById('feed-container');
-    container.innerHTML = 'Yükleniyor...';
-    const res = await fetch('/api/feed');
-    const items = await res.json();
+    container.innerHTML = '<p class="text-gray-500">Yükleniyor...</p>';
 
-    if(!items.length) { container.innerHTML = 'Akış boş.'; return; }
+    try {
+        const res = await fetch('/api/feed');
+        const items = await res.json();
 
-    let html = '';
-    items.forEach(item => {
-        html += `
-            <div style="background:#2C343A; padding:15px; margin-bottom:15px; border-radius:8px; display:flex; gap:15px;">
-                <img src="${item.poster}" style="width:60px; height:90px; object-fit:cover;">
-                <div>
-                    <div style="color:#bbb; font-size:14px;"><strong>${item.user}</strong> izledi:</div>
-                    <h3 style="color:#fff;">${item.title}</h3>
-                    <div style="color:#FFC107">★ ${item.score}</div>
-                    <p style="color:#ddd; font-size:14px; margin-top:5px;">${item.review}</p>
+        if (!items.length) {
+            container.innerHTML = '<p class="text-gray-500">Akış boş.</p>';
+            return;
+        }
+
+        let html = '';
+        items.forEach(item => {
+            const poster = item.poster || IMG_FALLBACK.SMALL_POSTER;
+            html += `
+                <div class="bg-[#2C343A] p-4 mb-4 rounded-lg flex gap-4 border border-[#3A424A]">
+                    <img src="${poster}" 
+                         onerror="this.onerror=null;this.src='${IMG_FALLBACK.SMALL_POSTER}'"
+                         class="w-16 h-24 object-cover rounded cursor-pointer hover:opacity-80 transition" 
+                         onclick="loadProduction('${item.production_id}'); navigateTo('production')">
+                    <div>
+                        <div class="text-gray-400 text-sm mb-1"><strong>${item.user}</strong> izledi:</div>
+                        <h3 class="text-white font-bold text-lg">${item.title}</h3>
+                        <div class="text-[#FFC107] text-sm mb-2">★ ${item.score}</div>
+                        <p class="text-gray-300 font-serif text-sm">${item.review}</p>
+                    </div>
                 </div>
-            </div>
-        `;
-    });
-    container.innerHTML = html;
+            `;
+        });
+        container.innerHTML = html;
+    } catch (e) {
+        console.error(e);
+    }
 }
 
 async function loadProfile() { /* Aynısı kalsın... */ }
 
 let currentFilters = {
     page: 1,
-    genre: 'all',
+    genres: 'all',
     year: 'all',
     sort: 'pop',
     letter: 'all'
@@ -371,8 +400,8 @@ async function loadMyLists() {
                             
                             <!-- GÖRÜNEN KISIM (Başlık + Kalem) -->
                             <div id="title-box-${list.id}" 
-                                 class="flex items-center gap-2 cursor-pointer group/edit" 
-                                 onclick="enableEdit('${list.id}')">
+                                 class="flex items-center gap-2 cursor-pointer group/edit z-10 relative" 
+                                 onclick="enableEdit(event, '${list.id}')">
                                 
                                 <h3 class="text-xl font-bold text-white truncate">${list.name}</h3>
                                 
@@ -415,7 +444,8 @@ async function loadMyLists() {
 }
 
 // 1. Düzenleme Modunu Aç
-function enableEdit(listId) {
+function enableEdit(event, listId) {
+    event.stopPropagation();
     // Başlık divini gizle
     document.getElementById(`title-box-${listId}`).classList.add('hidden');
 
@@ -423,7 +453,7 @@ function enableEdit(listId) {
     const input = document.getElementById(`input-${listId}`);
     input.classList.remove('hidden');
     input.focus();
-    // İmleci sona getirmek için küçük bir hack
+    // İmleci sona getirmek için
     const val = input.value;
     input.value = '';
     input.value = val;
@@ -442,20 +472,8 @@ function handleEditKeydown(event, listId) {
 
 // 3. Düzenlemeyi İptal Et (Veya dışarı tıklayınca kaydet)
 function cancelEdit(listId) {
-    // Burada tercih senin: Dışarı tıklayınca kaydetsin mi iptal mi etsin?
-    // Modern UX genelde "dışarı tıklayınca kaydet" şeklindedir.
-    // Eğer iptal etsin istersen sadece sınıfları değiştir.
-
-    const input = document.getElementById(`input-${listId}`);
-    const newName = input.value.trim();
-
-    // Eğer isim değişmişse ve boş değilse kaydetmeyi dene
-    // (Not: Basit olması için burada direkt eski haline döndürüyoruz,
-    // kaydetmeyi sadece Enter ile yapmak daha güvenli olabilir karışıklığı önlemek için)
-
-    // Şimdilik sadece görünümü eski haline getiriyoruz (Esc basmış gibi)
     document.getElementById(`title-box-${listId}`).classList.remove('hidden');
-    input.classList.add('hidden');
+    document.getElementById(`input-${listId}`).classList.add('hidden');
 }
 
 // 4. İsmi Sunucuya Kaydet
@@ -552,13 +570,15 @@ async function loadListDetails(listId) {
         }
 
         data.productions.forEach(prod => {
-            const poster = prod.poster || 'https://via.placeholder.com/200x300';
+            const poster = prod.poster || IMG_FALLBACK.POSTER;
 
             gridEl.innerHTML += `
                 <div class="group relative">
                     <!-- Film Kartı -->
                     <div class="cursor-pointer" onclick="loadProduction('${prod.id}'); navigateTo('production')">
-                        <img src="${poster}" class="w-full aspect-[2/3] object-cover rounded-lg border border-[#3A424A] hover:border-[#FFC107] transition">
+                        <img src="${poster}"
+                         onerror="this.onerror=null;this.src='${IMG_FALLBACK.POSTER}'"
+                         class="w-full aspect-[2/3] object-cover rounded-lg border border-[#3A424A] hover:border-[#FFC107] transition">
                         <h4 class="text-white text-sm font-bold mt-2 truncate">${prod.title}</h4>
                         <span class="text-gray-500 text-xs">${prod.year}</span>
                     </div>
@@ -631,8 +651,6 @@ async function toggleProductionInList(listId, prodId, checkbox) {
         if (!result.success) {
             alert("İşlem başarısız: " + result.error);
             checkbox.checked = !checkbox.checked;
-        } else {
-            console.log(result.action === 'added' ? 'Eklendi' : 'Çıkarıldı');
         }
     } catch (e) {
         console.error(e);
@@ -667,27 +685,21 @@ async function createNewListFromModal() {
 
 // Filtre değişince (Dropdown'lar tetikler)
 function changeFilter() {
-    // 1. HTML'den değerleri al
-    currentFilters.genre = document.getElementById('filter-genre').value;
+    currentFilters.genres = document.getElementById('filter-genres').value;
     currentFilters.year = document.getElementById('filter-year').value;
     currentFilters.sort = document.getElementById('sort-by').value;
 
-    // 2. Filtre değişince sayfa 1'e dönmeli
+    // Filtre değişince sayfa 1'e dönmeli
     currentFilters.page = 1;
-
-    // 3. Yeniden yükle
     loadAllMovies();
 }
 
 // Sayfa değişince (Önceki/Sonraki butonları tetikler)
 function changePage(direction) {
-    // direction: +1 (Sonraki) veya -1 (Önceki)
     const newPage = currentFilters.page + direction;
 
     // Sayfa 1'den küçük olamaz
     if (newPage < 1) return;
-
-    // (Opsiyonel: Toplam sayfayı geçip geçmediğini de kontrol edebilirsin)
 
     currentFilters.page = newPage;
     loadAllMovies();
@@ -713,19 +725,26 @@ function toggleLike() {
     btn.innerHTML = btn.classList.contains('active') ? '♥ Beğenildi' : '♡ Beğen';
 }
 
-function toggleWatchlist() {
-    const btn = document.getElementById('watchlistBtn');
-    btn.classList.toggle('active');
-    btn.innerHTML = btn.classList.contains('active') ? '✓ Listede' : '+ İzleme Listesi';
-}
+function openTab(event, tabId) {
+    // 1. TÜM İÇERİKLERİ GİZLE
+    document.querySelectorAll('.tab-content').forEach(content => {
+        content.classList.add('hidden');
+        content.classList.remove('block');
+    });
 
-function switchTab(index) {
-    const tabs = document.querySelectorAll('.tab');
-    const contents = document.querySelectorAll('.tab-content');
-    tabs.forEach(t => t.classList.remove('active'));
-    contents.forEach(c => c.classList.remove('active'));
-    tabs[index].classList.add('active');
-    contents[index].classList.add('active');
+    // 2. TÜM BUTONLARI PASİF YAP (Griye çevir)
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+        // Aktif stilleri sök
+        btn.className = "tab-btn text-gray-500 hover:text-gray-300 py-4 font-medium transition cursor-pointer";
+    });
+
+    // 3. SEÇİLEN İÇERİĞİ GÖSTER
+    document.getElementById(tabId).classList.remove('hidden');
+    document.getElementById(tabId).classList.add('block');
+
+    // 4. TIKLANAN BUTONU AKTİF YAP (Sarı yap)
+    // event.currentTarget tıklanan butondur
+    event.currentTarget.className = "tab-btn active text-[#FFC107] border-b-2 border-[#FFC107] py-4 font-bold transition cursor-pointer";
 }
 
 function toggleProfileDropdown() {
@@ -742,7 +761,7 @@ function initAlphaBar() {
     let html = `<button onclick="filterByLetter('all')" class="px-3 py-1 rounded hover:bg-[#FFC107] hover:text-black transition ${currentFilters.letter === 'all' ? 'bg-[#FFC107] text-black font-bold' : 'text-gray-400'}">Tümü</button>`;
 
     alphabet.forEach(char => {
-        html += `<button onclick="filterByLetter('${char}')" class="px-3 py-1 rounded hover:bg-[#FFC107] hover:text-black transition text-gray-400 font-medium">${char}</button>`;
+        html += `<button onclick="filterByLetter('${char}')" class="px-3 py-1 rounded hover:bg-[#FFC107] hover:text-black transition ${currentFilters.letter === char ? 'bg-[#FFC107] text-black font-bold' : 'text-gray-400 font-medium'}">${char}</button>`;
     })
 
     container.innerHTML = html;
@@ -753,8 +772,87 @@ function filterByLetter(char) {
     currentFilters.page = 1;
 
     loadAllMovies();
-
     initAlphaBar();
+}
+
+// SEARCH
+let searchTimeout;
+
+document.addEventListener('DOMContentLoaded', () => {
+    const searchInput = document.getElementById('global-search-input');
+    const resultsDropdown = document.getElementById('search-results-dropdown');
+
+    if (searchInput) {
+        searchInput.addEventListener('input', (e) => {
+            const query = e.target.value.trim();
+            clearTimeout(searchTimeout);
+
+            if (query.length < 2) {
+                resultsDropdown.classList.add('hidden');
+                resultsDropdown.innerHTML = '';
+                return;
+            }
+
+            searchTimeout = setTimeout(() => {
+                performSearch(query);
+            }, 300);
+        });
+
+        document.addEventListener('click', (e) => {
+            if (!searchInput.contains(e.target) && !resultsDropdown.contains(e.target)) {
+                resultsDropdown.classList.add('hidden');
+            }
+        });
+    } else {
+        console.error("HATA: 'global-search-input' ID'li element bulunamadı! HTML'i kontrol et.");
+    }
+});
+
+async function performSearch(query) {
+    const resultsDropdown = document.getElementById('search-results-dropdown');
+
+    if (!resultsDropdown) {
+        console.error("HATA: Dropdown kutusu (ID: search-results-dropdown) HTML'de bulunamadı!");
+        return;
+    }
+
+    try {
+        const response = await fetch(`/api/search?q=${encodeURIComponent(query)}`);
+        if (!response.ok) {
+            console.error(`API Hatası: ${response.status}`);
+        }
+        const results = await response.json();
+        resultsDropdown.innerHTML = '';
+
+        if (results.length === 0) {
+            resultsDropdown.innerHTML = '<div class="p-4 text-gray-500 text-sm text-center">Sonuç bulunamadı.</div>';
+        } else {
+            results.forEach(production => {
+                const poster = production.poster || IMG_FALLBACK.SMALL_POSTER;
+                const ratingHtml = production.imdb_rating ? `<span class="text-[#FFC107] text-xs">★ ${production.imdb_rating}</span>` : '';
+
+                const html = `
+                    <div class="flex items-center gap-3 p-3 hover:bg-[#2C343A] cursor-pointer transition border-b border-[#3A424A] last:border-none group"
+                         onclick="loadProduction('${production.id}'); navigateTo('production'); document.getElementById('search-results-dropdown').classList.add('hidden'); document.getElementById('global-search-input').value = '';">
+                        <img src="${poster}" 
+                             onerror="this.onerror=null;this.src='${IMG_FALLBACK.SMALL_POSTER}'"
+                             class="w-10 h-14 object-cover rounded shadow-sm border border-[#3A424A] group-hover:border-[#FFC107]">
+                        <div>
+                            <h4 class="text-white font-bold text-sm group-hover:text-[#FFC107] transition">${production.title}</h4>
+                            <div class="flex items-center gap-2">
+                                <span class="text-gray-500 text-xs">${production.year}</span>
+                                ${ratingHtml}
+                            </div>
+                        </div>
+                    </div>
+                `;
+                resultsDropdown.innerHTML += html;
+            });
+        }
+        resultsDropdown.classList.remove('hidden');
+    } catch (e) {
+        console.error("Arama hatası: ", e);
+    }
 }
 
 // --- BAŞLATMA (INIT) ---

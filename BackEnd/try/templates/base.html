@@ -25,19 +25,25 @@
     <nav class="container mx-auto px-4 flex justify-between items-center max-w-7xl h-12">
         <a href="#" onclick="navigateTo('films'); return false;" class="text-2xl font-bold text-[#FFC107] cursor-pointer hover:text-yellow-400 transition tracking-tight">BetterBoxd</a>
 
-        <div class="search-bar flex-1 max-w-md mx-8 relative hidden md:block">
-            <input type="text" placeholder="Film, yönetmen veya kullanıcı ara..."
-                   class="w-full px-5 py-2 bg-[#2C343A] border border-gray-700 rounded-full text-sm text-gray-200 focus:outline-none focus:border-[#FFC107] focus:ring-1 focus:ring-[#FFC107] transition-all">
-        </div>
+            <!-- Arama Çubuğu -->
+            <div class="search-bar flex-1 max-w-lg mx-8 relative hidden md:block">
+                <input type="text"
+                       id="global-search-input"
+                       placeholder="Film ara..."
+                       class="w-full px-5 py-2 bg-[#2C343A] border-2 border-transparent rounded-full text-sm text-gray-200 focus:outline-none focus:border-[#FFC107] transition-all"
+                       autocomplete="off">
 
-        <div class="nav-links flex items-center gap-6">
-            <button onclick="openModal()" class="bg-[#FFC107] text-[#14181C] px-4 py-1.5 rounded-full font-bold text-sm hover:bg-[#FFD54F] transition shadow-lg hover:shadow-yellow-500/20 whitespace-nowrap">
-                + İncele/Log
-            </button>
+                <!-- Arama Sonuçları Dropdown (Başlangıçta gizli) -->
+                <div id="search-results-dropdown" class="absolute top-full left-0 w-full bg-[#1C2329] mt-2 rounded-xl shadow-2xl border border-[#3A424A] hidden z-50 overflow-hidden max-h-[400px] overflow-y-auto">
+                    <!-- JS burayı dolduracak -->
+                </div>
+            </div>
 
-            <a href="#" onclick="navigateTo('feed')" class="hover:text-[#FFC107] font-medium transition text-sm">Akış</a>
-            <a href="#" onclick="navigateTo('lists')" class="hover:text-[#FFC107] font-medium transition text-sm">Listelerim</a>
-            <a href="#" onclick="navigateTo('films')" class="hover:text-[#FFC107] font-medium transition text-sm">Filmler</a>
+            <!-- Menü Linkleri -->
+            <div class="nav-links flex items-center gap-6">
+                <a href="#" onclick="navigateTo('feed')" class="hover:text-[#FFC107] font-medium transition">Akış</a>
+                <a href="#" onclick="navigateTo('lists')" class="hover:text-[#FFC107] font-medium transition">Listelerim</a>
+                <a href="#" onclick="navigateTo('films')" class="hover:text-[#FFC107] font-medium transition">Filmler</a>
 
             <div class="relative group h-full flex items-center ml-2">
                 <div class="w-9 h-9 rounded-full bg-[#FFC107] flex items-center justify-center text-[#14181C] font-bold cursor-pointer hover:scale-105 transition border-2 border-transparent hover:border-white select-none">

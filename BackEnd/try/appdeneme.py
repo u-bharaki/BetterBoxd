@@ -133,7 +133,7 @@ def get_all_productions():
     limit = 20
     offset = (page - 1) * limit
 
-    genre = request.args.get('genre', 'all')
+    genres = request.args.get('genres', 'all')
     year = request.args.get('year', 'all')
     sort_by = request.args.get('sort', 'pop')
     letter = request.args.get('letter', 'all')
@@ -155,9 +155,9 @@ def get_all_productions():
             params.append(f"{letter}%")
 
 
-    if genre and genre != 'all':
-        where_clauses.append("p.genre LIKE ?")
-        params.append(f'%{genre}%')
+    if genres and genres != 'all':
+        where_clauses.append("p.genres LIKE ?")
+        params.append(f'%{genres}%')
 
     if year and year != 'all':
         where_clauses.append("p.start_year = ?")
@@ -373,6 +373,33 @@ def get_production_lists_status(production_id):
     except Exception as e:
         print(f"LİSTE STATUS HATASI: {e}")
         return jsonify({'error': str(e), 'success': False})
+
+@app.route('/api/search')
+@login_required
+def search_productions():
+    query = request.args.get('q', '')
+
+    if len(query) < 2:
+        return jsonify([])
+
+    db = get_db()
+
+    sql = '''
+        SELECT id, title, start_year, poster_link, imdb_rating
+        FROM productions
+        WHERE title LIKE ?
+        ORDER BY title ASC
+        LIMIT 5
+    '''
+
+    results = db.execute(sql, (f'%{query}%',)).fetchall()
+    return jsonify([{
+        'id': str(row['id']),
+        'title': row['title'],
+        'year': row['start_year'],
+        'poster': row['poster_link'],
+        'imdb_rating': row['imdb_rating']
+    } for row in results])
 
 # ----- ADD -----
 
