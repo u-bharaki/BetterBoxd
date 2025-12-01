@@ -342,8 +342,130 @@ async function loadFeed() {
         console.error(e);
     }
 }
+async function updateSettings() {
+    const new_username = document.getElementById("settings-username").value;
+    const new_email = document.getElementById("settings-email").value;
 
-async function loadProfile() { /* Aynısı kalsın... */ }
+    const old_password = document.getElementById("current-password").value;
+    const new_password = document.getElementById("new-password").value;
+    const new_password2 = document.getElementById("confirm-password").value;
+
+    const msg = document.getElementById("settings-message");
+    msg.textContent = "İşlem yapılıyor...";
+
+    try {
+        const res = await fetch("/api/update_settings", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                new_username,
+                new_email,
+                old_password,
+                new_password,
+                new_password2
+            })
+        });
+
+        const data = await res.json();
+
+        msg.textContent = data.success ? "✅ " + data.message : "❌ " + data.message;
+
+    } catch (e) {
+        console.error("Update error:", e);
+        msg.textContent = "❌ Sunucuya ulaşılamadı.";
+    }
+}
+
+
+
+
+let ratingChartInstance = null;
+let genreChartInstance = null;
+
+async function loadProfile() {
+    try {
+        const response = await fetch('/api/profile');
+        const data = await response.json();
+
+        // İstatistikleri Yaz
+        document.getElementById('profile-fullname').textContent = data.fullname;
+        document.getElementById('profile-username').textContent = '@' + data.username;
+        document.getElementById('stat-watched').textContent = data.stats.watched;
+        document.getElementById('stat-lists').textContent = data.stats.lists;
+        document.getElementById('stat-following').textContent = data.stats.following;
+        document.getElementById('stat-followers').textContent = data.stats.followers;
+
+        // Son Aktiviteleri Listele
+        const activityContainer = document.getElementById('profile-recent-activity');
+        if (data.recent_activity.length === 0) {
+            activityContainer.innerHTML = '<p class="text-gray-500 text-center py-4">Henüz aktivite yok.</p>';
+        } else {
+            let html = '';
+            data.recent_activity.forEach(act => {
+                const poster = act.poster || 'https://placehold.co/50x75?text=No+Img';
+                html += `
+                    <div class="flex gap-3 mb-4 border-b border-[#3A424A] pb-3 last:border-0">
+                        <img src="${poster}" class="w-12 h-16 object-cover rounded">
+                        <div>
+                            <div class="text-white font-bold text-sm truncate w-40">${act.title}</div>
+                            <div class="text-[#FFC107] text-xs">★ ${act.score}</div>
+                            <p class="text-gray-400 text-xs mt-1 line-clamp-2">${act.text || ''}</p>
+                        </div>
+                    </div>`;
+            });
+            activityContainer.innerHTML = html;
+        }
+
+        // Grafikleri Çiz
+        renderProfileCharts(data.charts);
+
+    } catch (e) {
+        console.error("Profil hatası:", e);
+    }
+}
+
+function renderProfileCharts(chartData) {
+    // Grafik 1: Puanlar
+    const ctxRating = document.getElementById('userRatingChart');
+    if (ctxRating) {
+        if (ratingChartInstance) ratingChartInstance.destroy();
+        ratingChartInstance = new Chart(ctxRating.getContext('2d'), {
+            type: 'bar',
+            data: {
+                labels: ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10'],
+                datasets: [{ label: 'Puanlar', data: chartData.rating_data, backgroundColor: '#FFC107', borderRadius: 4 }]
+            },
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: { y: { grid: { color: '#2C343A' } }, x: { grid: { display: false } } }
+            }
+        });
+    }
+
+    // Grafik 2: Türler
+    const ctxGenre = document.getElementById('userGenreChart');
+    if (ctxGenre) {
+        if (genreChartInstance) genreChartInstance.destroy();
+        if (chartData.genre_data.length > 0) {
+            genreChartInstance = new Chart(ctxGenre.getContext('2d'), {
+                type: 'doughnut',
+                data: {
+                    labels: chartData.genre_labels,
+                    datasets: [{
+                        data: chartData.genre_data,
+                        backgroundColor: ['#FFC107', '#3498db', '#2ecc71', '#e74c3c', '#9b59b6'],
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    plugins: { legend: { position: 'right', labels: { color: '#E0E0E0' } } }
+                }
+            });
+        }
+    }
+}
 
 let currentFilters = {
     page: 1,
@@ -367,7 +489,7 @@ async function loadMyLists() {
                 <div class="col-span-full text-center py-10 bg-[#2C343A] rounded-xl border border-dashed border-gray-600">
                     <p class="text-gray-400 mb-4">Henüz hiç listen yok.</p>
                     <button onclick="createNewList()" class="text-[#FFC107] font-bold hover:underline">İlk listeni oluştur!</button>
-                </div>            
+                </div>
             `;
             return;
         }
@@ -385,26 +507,26 @@ async function loadMyLists() {
                 html += `
                     <div class="group relative bg-[#2C343A] p-6 rounded-xl border border-[#3A424A] hover:border-[#FFC107] transition-all hover:shadow-lg hover:shadow-yellow-900/10"
                         onclick="handleListCardClick(event, '${list.id}')">
-                        
+
                         <!-- 1. SİLME BUTONU (Sağ Üst Köşe - Çarpı) -->
-                        <button onclick="deleteList('${list.id}')" 
+                        <button onclick="deleteList('${list.id}')"
                                 class="absolute top-3 right-3 text-gray-500 hover:text-red-500 hover:bg-red-900/20 w-8 h-8 rounded-full flex items-center justify-center transition opacity-0 group-hover:opacity-100"
                                 title="Listeyi Sil">
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
                             </svg>
                         </button>
-    
+
                         <!-- 2. BAŞLIK VE DÜZENLEME ALANI -->
                         <div class="mb-4 pr-8"> <!-- Sağdan padding bıraktık ki çarpı butonuna değmesin -->
-                            
+
                             <!-- GÖRÜNEN KISIM (Başlık + Kalem) -->
-                            <div id="title-box-${list.id}" 
-                                 class="flex items-center gap-2 cursor-pointer group/edit z-10 relative" 
+                            <div id="title-box-${list.id}"
+                                 class="flex items-center gap-2 cursor-pointer group/edit z-10 relative"
                                  onclick="enableEdit(event, '${list.id}')">
-                                
+
                                 <h3 class="text-xl font-bold text-white truncate">${list.name}</h3>
-                                
+
                                 <!-- Kalem İkonu (Sadece üzerine gelince çıkar) -->
                                 <span class="text-[#FFC107] opacity-0 group-hover/edit:opacity-100 transition text-sm">
                                     <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -412,17 +534,17 @@ async function loadMyLists() {
                                     </svg>
                                 </span>
                             </div>
-    
+
                             <!-- DÜZENLEME KISMI (Gizli Input) -->
-                            <input type="text" 
-                                   id="input-${list.id}" 
+                            <input type="text"
+                                   id="input-${list.id}"
                                    value="${list.name}"
                                    class="hidden w-full bg-[#1C2329] text-white border border-[#FFC107] rounded px-2 py-1 outline-none font-bold text-xl"
                                    onkeydown="handleEditKeydown(event, '${list.id}')"
-                                   onblur="cancelEdit('${list.id}')"> 
+                                   onblur="cancelEdit('${list.id}')">
                                    <!-- onblur: Dışarı tıklayınca iptal et/kaydet -->
                         </div>
-                        
+
                         <p class="text-gray-500 text-sm">Bu listede ${list.production_count} yapım var.</p>
                     </div>
                 `;

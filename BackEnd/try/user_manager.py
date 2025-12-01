@@ -80,3 +80,70 @@ class UserManager:
     def check_password(self, user: Dict[str, Any], password: str) -> bool:
         """Girilen şifrenin hashlenmiş şifreyle eşleşip eşleşmediğini kontrol eder."""
         return user['password'] == self._hash_password(password)
+
+    def username_exists(self, username: str) -> bool:
+        user = self.get_user_by_username(username)
+        return user is not None
+
+
+    def email_exists(self, email: str) -> bool:
+        user = self.get_user_by_email(email)
+        return user is not None
+
+    def update_username(self, old_username: str, new_username: str) -> bool:
+        if self.username_exists(new_username):
+            return False
+
+        try:
+            conn = _get_db_connection(self.db_path)
+            cur = conn.cursor()
+            cur.execute(f"""
+            UPDATE {self.users_table_name}
+            SET username = ?
+            WHERE username = ?
+            """, (new_username, old_username))
+            conn.commit()
+            conn.close()
+            return True
+        except Exception as e:
+            print("Username update error:", e)
+            return False
+
+
+
+    def update_email(self, username: str, new_email: str) -> bool:
+        if self.email_exists(new_email):
+            return False
+
+        try:
+            conn = _get_db_connection(self.db_path)
+            cur = conn.cursor()
+            cur.execute(f"""
+            UPDATE {self.users_table_name}
+            SET email = ?
+            WHERE username = ?
+            """, (new_email, username))
+            conn.commit()
+            conn.close()
+            return True
+        except Exception as e:
+            print("Email update error:", e)
+            return False
+
+    def update_password(self, username: str, new_pass: str) -> bool:
+        hashed = self._hash_password(new_pass)
+
+        try:
+            conn = _get_db_connection(self.db_path)
+            cur = conn.cursor()
+            cur.execute(f"""
+            UPDATE {self.users_table_name}
+            SET password = ?
+            WHERE username = ?
+            """, (hashed, username))
+            conn.commit()
+            conn.close()
+            return True
+        except Exception as e:
+            print("Password update error:", e)
+            return False

@@ -4,6 +4,7 @@ import os
 import uuid
 from pathlib import Path
 from typing import Optional
+from collections import Counter
 
 from user_manager import UserManager
 
@@ -290,8 +291,12 @@ def get_profile():
     db = get_db()
     current_user_id = session['user_id']
 
+    # 1. Kullanıcı Bilgileri
     user = db.execute(f'SELECT * FROM {USERS_TABLE_NAME} WHERE id = ?', (current_user_id,)).fetchone()
+
+    # 2. İstatistikler
     total_watched = db.execute('SELECT COUNT(*) FROM reviews WHERE user_id = ?', (current_user_id,)).fetchone()[0]
+    total_lists = db.execute('SELECT COUNT(*) FROM lists WHERE user_id = ?', (current_user_id,)).fetchone()[0]
 
     try:
         followers = db.execute('SELECT COUNT(*) FROM follows WHERE followed_user_id = ?', (current_user_id,)).fetchone()[0]
@@ -300,14 +305,49 @@ def get_profile():
         followers = 0
         following = 0
 
+    # 3. Puan Dağılımı Grafiği İçin Veri
+    rating_counts = {i: 0 for i in range(1, 11)}
+    ratings_query = db.execute('SELECT score FROM reviews WHERE user_id = ?', (current_user_id,)).fetchall()
+    for row in ratings_query:
+        score = int(row['score'])
+        if 1 <= score <= 10:
+            rating_counts[score] += 1
+    rating_distribution = [rating_counts[i] for i in range(1, 11)]
+
+    # 4. Favori Türler Grafiği İçin Veri
+    genres_query = db.execute('''
+        SELECT p.genres FROM reviews r
+        JOIN productions p ON r.production_id = p.id
+        WHERE r.user_id = ?
+    ''', (current_user_id,)).fetchall()
+
+    all_genres = []
+    for row in genres_query:
+        if row['genres']:
+            g_list = [g.strip() for g in row['genres'].split(',')]
+            all_genres.extend(g_list)
+
+    top_genres = Counter(all_genres).most_common(5)
+    genre_labels = [item[0] for item in top_genres]
+    genre_data = [item[1] for item in top_genres]
+
+    # 5. Son Aktiviteler
+    recent = db.execute('''
+        SELECT r.score, r.context, p.title, p.poster_link
+        FROM reviews r
+        JOIN productions p ON r.production_id = p.id
+        WHERE r.user_id = ?
+        ORDER BY r.id DESC LIMIT 5
+    ''', (current_user_id,)).fetchall()
+
+    recent_activity = [{'title': r['title'], 'poster': r['poster_link'], 'score': r['score'], 'text': r['context']} for r in recent]
+
     return jsonify({
         'username': user['username'],
         'fullname': f"{user['first_name']} {user['last_name']}",
-        'stats': {
-            'watched': total_watched,
-            'followers': followers,
-            'following': following
-        }
+        'stats': {'watched': total_watched, 'lists': total_lists, 'followers': followers, 'following': following},
+        'charts': {'rating_data': rating_distribution, 'genre_labels': genre_labels, 'genre_data': genre_data},
+        'recent_activity': recent_activity
     })
 
 @app.route('/api/my-lists')
@@ -494,6 +534,122 @@ def update_list_name(list_id):
         return jsonify({'success': True})
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)})
+
+@app.route("/api/update_settings", methods=["POST"])
+def api_update_settings():
+    if "username" not in session:
+        return jsonify({"success": False, "message": "Giriş yapılmamış."}), 401
+
+    data = request.get_json()
+    if not data:
+        return jsonify({"success": False, "message": "Geçersiz istek."})
+
+    current_user = session["username"]
+
+    # Aktif kullanıcıyı DB'den çek
+    user = user_manager.get_user_by_username(current_user)
+    if not user:
+        return jsonify({"success": False, "message": "Kullanıcı bulunamadı."}), 404
+
+    new_username = data.get("new_username", "").strip()
+    new_email = data.get("new_email", "").strip()
+
+    old_password = data.get("old_password", "")
+    new_password = data.get("new_password", "")
+    new_password2 = data.get("new_password2", "")
+
+    updated_anything = False
+
+    # ----------- KULLANICI ADI GÜNCELLE -----------------
+    if new_username and new_username != current_user:
+
+        # Kullanıcı adı kullanılıyor mu?
+        if user_manager.get_user_by_username(new_username):
+            return jsonify({"success": False, "message": "Bu kullanıcı adı zaten kullanılıyor."})
+
+        try:
+            conn = sqlite3.connect(user_manager.db_path)
+            cursor = conn.cursor()
+            cursor.execute("""
+                UPDATE users SET username = ? WHERE username = ?
+            """, (new_username, current_user))
+            conn.commit()
+            conn.close()
+
+            session["username"] = new_username
+            updated_anything = True
+
+        except Exception as e:
+            return jsonify({"success": False, "message": f"Kullanıcı adı güncellenemedi: {e}"})
+
+
+    # ----------- EMAIL GÜNCELLE -----------------
+    if new_email and new_email != user["email"]:
+
+        if user_manager.get_user_by_email(new_email):
+            return jsonify({"success": False, "message": "Bu e-posta zaten kullanılıyor."})
+
+        try:
+            conn = sqlite3.connect(user_manager.db_path)
+            cursor = conn.cursor()
+            cursor.execute("""
+                UPDATE users SET email = ? WHERE username = ?
+            """, (new_email, session["username"]))
+            conn.commit()
+            conn.close()
+
+            updated_anything = True
+
+        except Exception as e:
+            return jsonify({"success": False, "message": f"E-posta güncellenemedi: {e}"})
+
+
+    # ----------- ŞİFRE GÜNCELLE -----------------
+    if old_password or new_password or new_password2:
+
+        print("---- DEBUG SHA256 ----")
+        print("DB Password:", user["password"])
+        print("Input Password HASH:", user_manager._hash_password(old_password))
+
+        if not old_password:
+            return jsonify({"success": False, "message": "Mevcut şifre gerekli."})
+
+        if not user_manager.check_password(user, old_password):
+            return jsonify({"success": False, "message": "Mevcut şifre yanlış."})
+
+        if new_password != new_password2:
+            return jsonify({"success": False, "message": "Yeni şifreler eşleşmiyor."})
+
+
+
+
+
+        hashed = user_manager._hash_password(new_password)
+
+        try:
+            conn = sqlite3.connect(user_manager.db_path)
+            cursor = conn.cursor()
+            cursor.execute("""
+                UPDATE users SET password = ? WHERE username = ?
+            """, (hashed, session["username"]))
+            conn.commit()
+            conn.close()
+
+            updated_anything = True
+
+        except Exception as e:
+            return jsonify({"success": False, "message": f"Şifre güncellenemedi: {e}"})
+
+
+    # -----------------------------------------------------
+
+    if not updated_anything:
+        return jsonify({"success": True, "message": "Hiçbir şey değiştirilmedi."})
+
+    return jsonify({"success": True, "message": "Bilgiler başarıyla güncellendi!"})
+
+
+
 
 @app.route('/api/list/<list_id>/toggle_production', methods=['POST'])
 @login_required
