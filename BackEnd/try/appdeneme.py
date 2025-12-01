@@ -562,17 +562,13 @@ def api_update_settings():
 
     # ----------- KULLANICI ADI GÜNCELLE -----------------
     if new_username and new_username != current_user:
-
-        # Kullanıcı adı kullanılıyor mu?
         if user_manager.get_user_by_username(new_username):
             return jsonify({"success": False, "message": "Bu kullanıcı adı zaten kullanılıyor."})
 
         try:
             conn = sqlite3.connect(user_manager.db_path)
             cursor = conn.cursor()
-            cursor.execute("""
-                UPDATE users SET username = ? WHERE username = ?
-            """, (new_username, current_user))
+            cursor.execute("UPDATE users SET username = ? WHERE username = ?", (new_username, current_user))
             conn.commit()
             conn.close()
 
@@ -582,9 +578,12 @@ def api_update_settings():
         except Exception as e:
             return jsonify({"success": False, "message": f"Kullanıcı adı güncellenemedi: {e}"})
 
-
     # ----------- EMAIL GÜNCELLE -----------------
     if new_email and new_email != user["email"]:
+
+        # --- YENİ EKLENEN KONTROL: E-posta formatı (@ var mı?) ---
+        if "@" not in new_email:
+            return jsonify({"success": False, "message": "Lütfen geçerli bir e-posta adresi giriniz."})
 
         if user_manager.get_user_by_email(new_email):
             return jsonify({"success": False, "message": "Bu e-posta zaten kullanılıyor."})
@@ -592,9 +591,7 @@ def api_update_settings():
         try:
             conn = sqlite3.connect(user_manager.db_path)
             cursor = conn.cursor()
-            cursor.execute("""
-                UPDATE users SET email = ? WHERE username = ?
-            """, (new_email, session["username"]))
+            cursor.execute("UPDATE users SET email = ? WHERE username = ?", (new_email, session["username"]))
             conn.commit()
             conn.close()
 
@@ -603,14 +600,8 @@ def api_update_settings():
         except Exception as e:
             return jsonify({"success": False, "message": f"E-posta güncellenemedi: {e}"})
 
-
     # ----------- ŞİFRE GÜNCELLE -----------------
     if old_password or new_password or new_password2:
-
-        print("---- DEBUG SHA256 ----")
-        print("DB Password:", user["password"])
-        print("Input Password HASH:", user_manager._hash_password(old_password))
-
         if not old_password:
             return jsonify({"success": False, "message": "Mevcut şifre gerekli."})
 
@@ -620,18 +611,12 @@ def api_update_settings():
         if new_password != new_password2:
             return jsonify({"success": False, "message": "Yeni şifreler eşleşmiyor."})
 
-
-
-
-
         hashed = user_manager._hash_password(new_password)
 
         try:
             conn = sqlite3.connect(user_manager.db_path)
             cursor = conn.cursor()
-            cursor.execute("""
-                UPDATE users SET password = ? WHERE username = ?
-            """, (hashed, session["username"]))
+            cursor.execute("UPDATE users SET password = ? WHERE username = ?", (hashed, session["username"]))
             conn.commit()
             conn.close()
 
@@ -640,15 +625,12 @@ def api_update_settings():
         except Exception as e:
             return jsonify({"success": False, "message": f"Şifre güncellenemedi: {e}"})
 
-
     # -----------------------------------------------------
 
     if not updated_anything:
         return jsonify({"success": True, "message": "Hiçbir şey değiştirilmedi."})
 
     return jsonify({"success": True, "message": "Bilgiler başarıyla güncellendi!"})
-
-
 
 
 @app.route('/api/list/<list_id>/toggle_production', methods=['POST'])

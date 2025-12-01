@@ -353,6 +353,7 @@ async function updateSettings() {
     const msg = document.getElementById("settings-message");
     msg.textContent = "İşlem yapılıyor...";
 
+
     try {
         const res = await fetch("/api/update_settings", {
             method: "POST",
