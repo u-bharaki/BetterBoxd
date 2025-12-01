@@ -39,6 +39,23 @@ class UserManager:
             print(f"UserManager DB Hatası (get_user): {e}")
             return None
 
+    def get_user_by_email(self, email: str) -> Optional[Dict[str, Any]]:
+        """E-posta adresiyle veritabanından kullanıcıyı kontrol eder."""
+        try:
+            conn = _get_db_connection(self.db_path)
+            cursor = conn.cursor()
+            cursor.execute(f"""
+            SELECT id, username, email
+            FROM "{self.users_table_name}"
+            WHERE email = ?
+            """, (email,))
+            user = cursor.fetchone()
+            conn.close()
+            return dict(user) if user else None
+        except Exception as e:
+            print(f"UserManager DB Hatası (get_user_by_email): {e}")
+            return None
+
     def create_user(self, username: str, password: str, email: str, first_name: str, last_name: str) -> bool:
         """Yeni kullanıcıyı hashlenmiş şifreyle kaydeder."""
         if self.get_user_by_username(username):

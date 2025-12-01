@@ -101,10 +101,19 @@ def register():
         first_name = request.form['first_name']
         last_name = request.form['last_name']
 
+        # 1. Kontrol: Kullanıcı adı alınmış mı?
         if user_manager.get_user_by_username(username):
             error = 'Bu kullanıcı adı zaten alınmış.'
+
+        # 2. Kontrol (YENİ EKLENEN): E-posta adresi sistemde var mı?
+        elif user_manager.get_user_by_email(email):
+            error = 'Bu e-posta adresiyle zaten bir hesap mevcut.'
+
+        # 3. Kontrol: Alanlar boş mu?
         elif not all([username, password, email, first_name, last_name]):
             error = 'Tüm alanları doldurun.'
+
+        # Her şey tamamsa kullanıcıyı oluştur
         elif user_manager.create_user(username, password, email, first_name, last_name):
             return redirect(url_for('login'))
         else:
