@@ -84,6 +84,7 @@ def login():
             session['user_id'] = user_data['id']
             session['username'] = user_data['username']
             session['fullname'] = f"{user_data['first_name']} {user_data['last_name']}"
+            session['email'] = user_data['email']
             return redirect(url_for('index'))
         else:
             error = 'Hatalı kullanıcı adı veya şifre.'
@@ -149,7 +150,7 @@ def get_all_productions():
 
     if letter and letter != 'all':
         if letter == '#':
-            where_clauses.append(f"p.letter GLOB '[0-9]*'")
+            where_clauses.append(f"p.title GLOB '[0-9]*'")
         else:
             where_clauses.append("p.title LIKE ?")
             params.append(f"{letter}%")
@@ -523,7 +524,7 @@ if __name__ == '__main__':
 
         try:
             user_manager = UserManager(db_path=path, users_table_name=USERS_TABLE_NAME)
-            app.run(debug=True)
+            app.run("0.0.0.0", port=6969, debug=True)
         except Exception as e:
             print(f"Uygulama başlatılamadı veya UserManager kurulumunda hata: {e}")
 

@@ -3,8 +3,6 @@
 {% block title %}BetterBoxd - Ana Sayfa{% endblock %}
 
 {% block content %}
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
 <div id="production-page" class="page hidden">
     <section class="production-header mb-8 relative h-[500px]">
         <img src="" alt="Backdrop" class="backdrop w-full h-full object-cover rounded-xl shadow-2xl opacity-60 absolute inset-0 bg-[#333]">
@@ -99,6 +97,7 @@
                 <span class="text-xl">+</span> Yeni Liste Oluştur
             </button>
         </div>
+
         <div id="lists-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         </div>
     </div>
@@ -115,6 +114,7 @@
                 <p class="text-gray-500 mt-1" id="detail-list-count">0 Yapım</p>
             </div>
         </div>
+
         <div id="list-detail-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-6">
         </div>
     </div>
@@ -124,7 +124,7 @@
     <div class="flex justify-between items-center mb-8">
         <h1 class="text-3xl font-bold m-0 border-l-4 border-[#FFC107] pl-4">Filmler</h1>
         <div class="filters flex gap-3">
-            <select id="filter-genre" class="bg-[#2C343A] text-white px-4 py-2 rounded-lg border border-[#3A424A]" onchange="changeFilter()">
+            <select id="filter-genres" class="bg-[#2C343A] text-white px-4 py-2 rounded-lg border border-[#3A424A]" onchange="changeFilter()">
                 <option value="all">Tüm Türler</option>
                 <option value="Action">Aksiyon</option>
                 <option value="Drama">Dram</option>
