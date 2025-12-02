@@ -222,13 +222,6 @@ def get_production_detail(prod_id):
         WHERE production_id = ? AND role = 'director' LIMIT 1
     ''', (prod_id,)).fetchone()
 
-    rating_data = db.execute('''
-        SELECT AVG(score) as average, COUNT(*) as count 
-        FROM reviews WHERE production_id = ?
-    ''', (prod_id,)).fetchone()
-
-    avg_rating = round(rating_data['average'], 1) if rating_data['average'] else 0
-
     response = {
         'id': production['id'],
         'title': production['title'],
@@ -237,10 +230,28 @@ def get_production_detail(prod_id):
         'poster': production['poster_link'],
         'backdrop': production['poster_link'],
         'director': f"{director['first_name']} {director['last_name']}" if director else "Bilinmiyor",
-        'rating': avg_rating,
-        'rating_count': rating_data['count']
+        'imdb_rating': production['imdb_rating'],
+        'imdb_votes': production['imdb_votes'],
+        'site_rating': production['site_rating'],
+        'site_votes': production['site_votes']
     }
     return jsonify(response)
+
+@app.route('/api/production/<string:prod_id>/cast')
+@login_required
+def get_production_cast(prod_id):
+    db = get_db()
+    cast_data = db.execute('''
+        SELECT first_name, last_name FROM contributors
+        WHERE production_id = ? AND role = 'actor'
+    ''', (prod_id,)).fetchall()
+
+    return jsonify({
+        'cast': [{
+            'name': f"{row['first_name']} {row['last_name']}"
+        } for row in cast_data],
+    })
+
 
 @app.route('/api/production/<string:prod_id>/reviews')
 @login_required
@@ -465,6 +476,15 @@ def add_review():
             INSERT INTO reviews (user_id, production_id, score, context)
             VALUES (?, ?, ?, ?)
         ''', (current_user_id, data['productionId'], data['score'], data['text']))
+
+        site_rating_data = db.execute('''
+            SELECT AVG(score) as site_rating FROM reviews WHERE production_id = ?
+        ''', (data['productionId'],)).fetchone()
+
+        db.execute('''
+            UPDATE productions SET site_rating = ?, site_votes = site_votes + 1
+            WHERE id = ?
+        ''', (site_rating_data['site_rating'] if None else 0, data['productionId']))
         db.commit()
         return jsonify({'success': True})
     except Exception as e:

@@ -31,35 +31,35 @@ function navigateTo(pageName) {
 // --- MODAL VE REVIEW İŞLEMLERİ ---
 
 function openModal(prodId) {
-    // Eğer bir ID gelirse onu kullan, yoksa o an sayfadaki filmi kullan
     window.activeProductionId = prodId || window.currentProductionId;
-
     const modal = document.getElementById('reviewModal');
-    modal.classList.add('active');
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
 
-    // Modalı açarken eski puanları sıfırla
-    const stars = modal.querySelectorAll('.star');
-    stars.forEach(s => s.classList.remove('filled'));
-    document.getElementById('modalRating').dataset.currentRating = "0";
-    document.querySelector('.form-textarea').value = ""; // Texti temizle
+    // Modalı açarken yıldızları sıfırla
+    const container = document.getElementById('modal-star-container');
+    if (container) {
+        container.dataset.rating = 0;
+        renderStars(container, 0);
+    }
 
-    // Modal başlığına film ismini koyabiliriz (Opsiyonel, şimdilik sabit kalsın)
+    document.querySelector('.form-textarea').value = "";
 }
-
 function closeModal() {
-    document.getElementById('reviewModal').classList.remove('active');
+    const modal = document.getElementById('reviewModal');
+    if (modal) {
+        document.getElementById('reviewModal').classList.remove('active');
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+    }
+    window.activeProductionId = null;
 }
 
 async function saveReview() {
-    // 1. Puanı Modalın içinden al
-    const ratingContainer = document.getElementById('modalRating');
-    // dataset string döner, sayıya çevir
-    const score = parseInt(ratingContainer.dataset.currentRating || 0);
-
-    // 2. Metni al
+    const ratingContainer = document.getElementById('modal-star-container');
+    const score = parseInt(ratingContainer.dataset.rating || 0); // 1-10 arası
     const text = document.querySelector('.form-textarea').value;
 
-    // 3. Kontrol
     if (score === 0) {
         alert("Lütfen bir puan verin!");
         return;
@@ -81,65 +81,75 @@ async function saveReview() {
         const result = await response.json();
 
         if (result.success) {
-            alert('İnceleme başarıyla kaydedildi!');
             closeModal();
-            // Eğer o an film detay sayfasındaysak yorumları güncelle
-            if (window.activeProductionId === window.currentProductionId) {
-                loadProduction(window.currentProductionId);
-            }
+            await loadProduction(window.currentProductionId);
+            setTimeout(() => {
+                alert('İnceleme başarıyla kaydedildi!');
+            }, 50);
         } else {
-            alert('Hata: ' + (result.error || 'Bilinmeyen bir hata oluştu. Giriş yaptınız mı?'));
+            alert('Hata: ' + (result.error || 'Bilinmeyen hata'));
         }
     } catch (error) {
         console.error('Hata:', error);
-        alert('Sunucu hatası. Lütfen console logu kontrol edin.');
     }
 }
+// --- SVG İKONLARI (SARI ve GRİ) ---
+const STAR_ICONS = {
+    FULL:  `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="#FFC107"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>`,
+    HALF:  `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><defs><linearGradient id="halfGrad"><stop offset="50%" stop-color="#FFC107"/><stop offset="50%" stop-color="#4A5158"/></linearGradient></defs><path fill="url(#halfGrad)" d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>`,
+    EMPTY: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="#4A5158"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>`
+};
 
-// --- YILDIZ SİSTEMİ (STAR RATING) ---
-function initializeStarRating(containerId) {
+function initJsStarRating(containerId) {
     const container = document.getElementById(containerId);
     if (!container) return;
 
-    const stars = container.querySelectorAll('.star');
+    renderStars(container, 0);
 
-    // Başlangıç değeri
-    if (!container.dataset.currentRating) {
-        container.dataset.currentRating = "0";
-    }
-
-    stars.forEach((star) => {
-        // Hover Efekti
-        star.addEventListener('mouseenter', function() {
-            const value = parseInt(this.getAttribute('data-value'));
-            updateVisuals(stars, value);
-        });
-
-        // Tıklama Efekti
-        star.addEventListener('click', function() {
-            const value = this.getAttribute('data-value');
-            container.dataset.currentRating = value;
-            updateVisuals(stars, parseInt(value));
-        });
+    container.addEventListener('mousemove', (e) => {
+        const score = calculateScore(e, container);
+        renderStars(container, score);
     });
 
-    // Mouse Çekilince (Eski haline dön)
-    container.addEventListener('mouseleave', function() {
-        const saved = parseInt(this.dataset.currentRating || 0);
-        updateVisuals(stars, saved);
+    container.addEventListener('mouseleave', () => {
+        const savedScore = parseInt(container.dataset.rating || 0);
+        renderStars(container, savedScore);
     });
 
-    function updateVisuals(starList, rating) {
-        starList.forEach(s => {
-            const val = parseInt(s.getAttribute('data-value'));
-            // Puanı (1-10) kontrol et
-            if (val <= rating) {
-                s.classList.add('filled');
-            } else {
-                s.classList.remove('filled');
-            }
-        });
-    }
+    container.addEventListener('click', (e) => {
+        const score = calculateScore(e, container);
+        container.dataset.rating = score; // HTML'e kaydet (1-10 arası)
+        renderStars(container, score);
+        console.log(`Puan Verildi: ${score}`);
+    });
+}
+
+function calculateScore(e, container) {
+    const rect = container.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const width = rect.width;
+
+    let percent = x / width;
+    if (percent < 0) percent = 0;
+    if (percent > 1) percent = 1;
+
+    let score = Math.ceil(percent * 10);
+    if (score === 0) score = 1;
+    return score;
+}
+
+function renderStars(container, score) {
+    let html = '';
+
+    const fullStars = Math.floor(score / 2);
+    const hasHalf = score % 2 !== 0;
+    const emptyStars = 5 - fullStars - (hasHalf ? 1 : 0);
+
+    for (let i = 0; i < fullStars; i++) html += STAR_ICONS.FULL;
+    if (hasHalf) html += STAR_ICONS.HALF;
+    for (let i = 0; i < emptyStars; i++) html += STAR_ICONS.EMPTY;
+
+    container.innerHTML = html;
 }
 
 // --- LOAD ---
@@ -160,8 +170,11 @@ async function loadProduction(id) {
         // DOM Güncelleme
         document.querySelector('.production-title').textContent = prod.title;
         document.querySelector('.production-year').textContent = prod.year;
-        document.querySelector('.production-meta span').textContent = prod.director;
-        document.querySelector('.rating-display span:last-child').textContent = `${prod.rating} / 10`;
+        document.querySelector('.production-meta span:last-child').textContent = prod.director;
+        document.querySelector('.imdb_score').textContent = prod.imdb_rating;
+        document.querySelector('.imdb_votes').textContent = prod.imdb_votes;
+        document.querySelector('.site_score').textContent = prod.site_rating;
+        document.querySelector('.site_votes').textContent = prod.site_votes;
         document.querySelector('.plot').textContent = prod.plot;
 
         // Resimler
@@ -252,7 +265,8 @@ async function loadAllMovies() {
 
 async function loadCast(id) {
     const response = await fetch(`/api/production/${id}/cast`);
-    const castList = await response.json();
+    const castData = await response.json();
+    const castList = castData.cast;
 
     const grid = document.querySelector('.cast-grid');
     grid.innerHTML = '';
@@ -265,7 +279,6 @@ async function loadCast(id) {
                      <img src="${IMG_FALLBACK.AVATAR}" onerror="this.src='${IMG_FALLBACK.AVATAR}'" class="w-full h-full object-cover">
                 </div>
                 <div class="text-white font-bold text-sm">${actor.name}</div>
-                <div class="text-gray-500 text-xs">${actor.role}</div>
             </div>
         `;
     });
@@ -981,8 +994,8 @@ async function performSearch(query) {
 // --- BAŞLATMA (INIT) ---
 document.addEventListener('DOMContentLoaded', () => {
     // Yıldız sistemlerini başlat
-    initializeStarRating('userRating');
-    initializeStarRating('modalRating');
+    initJsStarRating('page-star-container');
+    initJsStarRating('modal-star-container');
     initAlphaBar();
 
     // Varsayılan filmi yükle

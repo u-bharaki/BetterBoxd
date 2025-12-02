@@ -585,47 +585,15 @@ review-feed-card {
     border-color: #FFC107;
 }
 
-.star-rating {
+.interactive-stars {
     display: inline-flex;
-    position: relative;
-    font-size: 0;
-    margin-left: -2px; /* Hafif sola çekip hizalar */
-}
-
-.star-rating .star {
-    width: 15px; /* Yıldızın tam yarısı */
-    height: 30px;
-    display: inline-block;
-    overflow: hidden;
     cursor: pointer;
-    position: relative;
+    user-select: none;
+    align-items: center;
 }
 
-/* Yıldız İkonu */
-.star-rating .star:before {
-    content: '★';
-    position: absolute;
-    top: 0;
-    font-size: 30px;
-    line-height: 30px;
-    color: #4A5158; /* Boş renk */
-    transition: color 0.2s;
-}
-
-/* Sol Parça (Tek sayılar: 1, 3, 5...) */
-.star-rating .star:nth-child(odd) {
-    z-index: 1; /* Tıklamayı kolaylaştırmak için */
-}
-.star-rating .star:nth-child(odd):before {
-    left: 0;
-}
-
-/* Sağ Parça (Çift sayılar: 2, 4, 6...) */
-.star-rating .star:nth-child(even):before {
-    right: 0;
-}
-
-/* Dolu Yıldız Rengi */
-.star-rating .star.filled:before {
-    color: #FFC107;
+.interactive-stars svg {
+    width: 30px;
+    height: 30px;
+    pointer-events: none;
 }
