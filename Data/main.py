@@ -154,6 +154,10 @@ def load_last_session():
 
 def save_session():
     global NEW_SAVE_FILE, NEW_DB_FILE, NEW_EXCEL_FILE, LOG_FILE, TOTAL_QUERY_COUNT, current_key_index, TERM_INDEX
+
+    if is_api_keys_finished:
+        current_key_index = 0
+
     if NEW_SAVE_FILE != "":
         file = NEW_SAVE_FILE
     else:
@@ -269,7 +273,7 @@ def get_films(approx_film_count, conn, cursor):
                             query_count += 1
                             details = detail_resp.json()
                         except Exception as e:
-                            print("[ERROR] Detail request hata verdi: {e}")
+                            print(f"[ERROR] Detail request hata verdi: {e}")
                             save_session()
                             conn.commit()
                             continue
@@ -468,18 +472,22 @@ def insert_to_sql(data, conn, cursor):
 
     year_str = data.get("Year", "")
     years_found = re.findall(r"(\d{4})", year_str)
-    start_year = ""
-    end_year = ""
+    start_year = None
+    end_year = None
 
     if len(years_found) == 1:
-        start_year = years_found[0]
+        start_year = int(years_found[0])
         if "-" not in year_str:
-            end_year = years_found[0]
+            end_year = int(years_found[0])
         else:
-            end_year = ""
+            end_year = None
     elif len(years_found) >= 2:
-        start_year = years_found[0]
-        end_year = years_found[1]
+        start_year = int(years_found[0])
+        end_year = int(years_found[1])
+
+    if start_year is None:
+        print(f"[WARNING] '{Title}' invalid start_year ('{year_str}'), therefore can not add to database")
+        return
 
     cursor.execute(
         f"SELECT 1 FROM {PRODUCTIONS_TABLE_NAME} WHERE Title = ? AND start_year = ? AND end_year = ?;",
