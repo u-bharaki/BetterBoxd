@@ -1,103 +1,265 @@
-# BetterBoxd - Letterboxd Benzeri Sosyal Film Platformu
+# 🎬 BetterBoxd - Modern Film ve Dizi Takip Platformu
 
-![Durum](https://img.shields.io/badge/status-geli%C5%9Ftirme%20a%C5%9Famas%C4%B1nda-yellow)
-![Backend](https://img.shields.io/badge/Backend-Flask%20(Planlan%C4%B1yor)-blue)
-![Database](https://img.shields.io/badge/Database-SQLite-orange)
+![Status](https://img.shields.io/badge/status-active-brightgreen)
+![Backend](https://img.shields.io/badge/backend-Flask-blue)
+![Frontend](https://img.shields.io/badge/frontend-HTML%20%7C%20JS%20%7C%20Tailwind-red)
+![Database](https://img.shields.io/badge/database-SQLite-orange)
 
-Bu proje, **Letterboxd**'a benzer bir sosyal film ve dizi takip platformu oluşturmayı amaçlamaktadır. Kullanıcıların izledikleri yapımları puanlayıp inceleyebileceği, listeler oluşturabileceği ve birbirlerini sosyal olarak takip edebileceği bir web uygulaması hedeflenmektedir.
+**BetterBoxd**, sinema ve dizi tutkunları için geliştirilmiş, Letterboxd tarzı sosyal bir film keşif ve takip platformudur. Kullanıcıların izledikleri yapımları puanlayıp inceleyebileceği, kişisel listeler oluşturabileceği ve arkadaşlarıyla etkileşime girebileceği modern bir web uygulamasıdır.
 
-Proje şu anda **ilk geliştirme aşamasındadır**; veritabanı mimarisi tamamlanmış olup, backend ve frontend bileşenleri geliştirilme sürecindedir.
-
----
-
-## 🚀 Proje Vizyonu ve Temel Özellikler (Planlanan)
-
-* **🎬 Geniş Yapım Kataloğu:** Filmler ve diziler hakkında (IMDb puanı, yıl, poster, özet, oyuncular vb.) detaylı bilgilere erişim.
-* **✍️ Puanlama ve Eleştiri:** Kullanıcıların izledikleri yapımlara 0-10 arası puan vermesi ve detaylı incelemeler (review) yazması.
-* **👥 Sosyal Takip:** Kullanıcıların birbirini takip edebilmesi ve takip ettikleri kişilerin aktivitelerini bir "feed" üzerinde görmesi.
-* **📚 Kişisel Listeleme:** "İzlenecekler", "Favorilerim", "Bitirdiklerim" gibi (UUID tabanlı) benzersiz ve kişisel listeler oluşturma.
-* **🧑‍🎨 Katkıda Bulunma:** Yapımlara ait yönetmen, yazar ve oyuncu bilgilerini görme ve ilişkilendirme.
+Proje, **3-Tier Architecture (Üç Katmanlı Mimari)** prensiplerine uygun olarak geliştirilmiştir: veri tabanı, iş mantığı (backend) ve sunum katmanı (frontend) birbirinden bağımsız çalışır.
 
 ---
 
-## 🛠️ Teknoloji Mimarisi (Mevcut ve Planlanan)
+## ✨ Öne Çıkan Özellikler
 
-* **Backend (Planlanıyor):** **Flask**
-    * RESTful API servisleri
-    * Kullanıcı yönetimi (Authentication & Authorization)
-    * İş mantığı (Business Logic)
-* **Frontend (Planlanıyor):** [Belirlenmedi, örn: React, Jinja2 template]
-* **Veritabanı (Tamamlandı):** **SQLite**
-    * İlişkisel şema (`FOREIGN KEY`, `CHECK` kısıtlamaları ile veri bütünlüğü).
-* **Veri İşleme (Geliştiriliyor):** **Python**
-    * Harici API'lerden veri çekme, temizleme ve SQLite veritabanına yükleme betikleri.
+### 🎥 İçerik Keşfi
+- **Zengin Film Arşivi**: Binlerce film ve dizi bilgisi (yönetmen, oyuncular, özet, yıl, tür)
+- **Anlık Arama**: Debounce algoritması ile sunucu dostu, anlık sonuç veren akıllı arama
+- **Gelişmiş Filtreleme**: Tür, yıl, alfabetik sıralama ve popülerlik/puan bazlı filtreleme
+- **IMDb Entegrasyonu**: Her yapım için IMDb puanı ve oy sayısı görüntüleme
 
----
+### ⭐ Kullanıcı Etkileşimi
+- **Hassas Puanlama Sistemi**: 0.5'lik adımlarla 0-5 arası detaylı puanlama (yarım yıldız desteği)
+- **İnceleme Yazma**: Filmler hakkında detaylı inceleme yazabilme ve paylaşma
+- **Karşılaştırmalı Puanlama**: Site ortalaması vs IMDb puanı karşılaştırması
+- **Beğeni Sistemi**: Favori filmleri beğenip profilinde toplama
 
-## 📊 Proje Durumu (Kasım 2025)
+### 📋 Liste Yönetimi
+- **Özel Listeler**: Sınırsız sayıda kişiselleştirilmiş liste oluşturma
+- **CRUD İşlemleri**: Listeleri oluşturma, düzenleme, silme ve içerik yönetimi
+- **Hızlı Ekleme**: Film detay sayfasından tek tıkla birden fazla listeye ekleme
+- **Inline Düzenleme**: Liste adlarını sayfa yenilemeden değiştirme
 
-Proje aktif olarak geliştirilmektedir.
-
-* [✅] **Veritabanı Mimarisi:** Tüm ana tablolar (`users`, `productions`, `reviews`, `follows`, `lists`, `contributors` vb.) ve ilişkiler (`schema.sql` içinde) tanımlandı.
-* [✅] **Veri Çekme Betikleri (İlk Aşama):** Harici API'den veri çeken (`main.py`) ve unique film sayısını hesaplayan (`unique_film_count.py`) Python betikleri tamamlandı.
-* [⏳] **Backend (Flask API):** Geliştirilmeye başlanacak.
-* [⬜] **Frontend (Web Arayüzü):** Henüz başlanmadı.
-
----
-
-## 🗃️ Veritabanı Şeması
-
-Projenin kalbi olan SQLite veritabanı, veriyi mantıksal olarak 7+ ana tabloda saklamaktadır:
-
-1.  `users`: Kullanıcı bilgilerini tutar.
-2.  `productions`: Filmler/diziler hakkındaki ana bilgileri tutar.
-3.  `contributors`: Yapımlardaki kişileri (aktör, yönetmen) ve rollerini tutar.
-4.  `reviews`: Kullanıcıların yapımlara verdiği puan ve yorumları saklar.
-5.  `follows`: Kullanıcıların birbirini takip etme ilişkisini tutar.
-6.  `lists`: Kullanıcıların oluşturduğu listelerin adını (`list_id` UUID'dir).
-7.  `productions_in_lists`: Hangi yapımın hangi listeye eklendiğini gösterir.
+### 📊 Profil ve İstatistikler
+- **Görsel İstatistikler**: Chart.js ile oluşturulmuş puan dağılımı ve tür grafikleri
+- **Aktivite Takibi**: İzlenen film sayısı, yazılan inceleme ve oluşturulan liste sayıları
+- **Sosyal Özellikler**: Takipçi/takip edilen sistemi ve arkadaş akışı
+- **Hesap Yönetimi**: Kullanıcı adı, e-posta ve şifre güncelleme
 
 ---
 
-## 🚀 Kurulum ve Çalıştırma (Mevcut Durum)
+## 🛠️ Teknoloji Stack
 
-Projenin mevcut (veritabanı ve betik) kısmını çalıştırmak için:
+### Backend
+- **Python 3.x** - Ana programlama dili
+- **Flask 2.x** - Lightweight web framework
+- **Flask-Session** - Sunucu taraflı oturum yönetimi
+- **SQLite3** - Embedded veritabanı sistemi
+- **Şifre Hashleme**: SHA-256 algoritması ile güvenli şifre saklama
 
-### 1. Projeyi Klonlayın
-```bash
-git clone [https://github.com/](https://github.com/)[kullanici_adiniz]/[repo_adiniz].git
-cd [repo_adiniz]
+### Frontend
+- **HTML5** - Semantic markup
+- **Tailwind CSS** - Utility-first CSS framework
+- **Vanilla JavaScript (ES6+)** - DOM manipulation ve API çağrıları
+- **Chart.js** - İstatistik grafikleri
+- **Fetch API** - Asenkron veri iletişimi
+
+### Veritabanı Tasarımı
+- **İlişkisel Model** - Normalize edilmiş tablo yapısı
+- **UUID Primary Keys** - Güvenli ve benzersiz kimlikler
+- **Foreign Key Constraints** - Veri bütünlüğü
+- **İndeksleme** - Performans optimizasyonu
+
+---
+
+## 📂 Proje Yapısı
+
+```
+BetterBoxd/
+│
+├── BackEnd/
+│   ├── databases/
+│   │   └── *.db
+│   ├── templates/
+│   │   ├── login.html
+│   │   └── register.html
+│   └── try/
+│   │   ├── static/
+│   │   │   ├── css/
+│   │   │   │   └── style.css
+│   │   │   └── js/
+│   │   │       └── app.js
+│   │   ├── templates/
+│   │   │   ├── base.html
+│   │   │   ├── index.html
+│   │   │   ├── login.html
+│   │   │   └── register.html
+│   │   ├── appdeneme.py
+│   │   ├── betterboxd.db
+│   │   └── user_manager.py
+│   └── requirements.txt
+│
+├── Data/
+│   ├── databases/
+│   ├── logs/
+│   ├── raw_excels/
+│   ├── main.py
+│   ├── remove_used_tag.py
+│   ├── requirements.txt
+│   └── unique_film_count.py
+│
+└── Documents/
+    ├── BIL372 AraRapor.docx
+    ├── BIL372 SonRapor.docx
+    ├── EER Diagramı.jpeg
+    └── Relation Table.png
 ```
 
-### 2. (Öneri) Sanal Ortam Oluşturun
+---
+
+## 🚀 Kurulum
+
+### Gereksinimler
+- Python 3.8 veya üzeri
+- pip (Python paket yöneticisi)
+- Modern web tarayıcı (Chrome, Firefox, Safari, Edge)
+
+### Adım 1: Projeyi İndirin
 ```bash
-# Python sanal ortamını oluştur ve aktive et
+git clone https://github.com/u-bharaki/BetterBoxd.git
+cd BetterBoxd
+```
+
+### Adım 2: Sanal Ortam Oluşturun (Önerilen)
+```bash
+# Windows
 python -m venv venv
-source venv/bin/activate  # (Windows için: venv\Scripts\activate)
+venv\Scripts\activate
+
+# macOS/Linux
+python3 -m venv venv
+source venv/bin/activate
 ```
 
-### 3. Bağımlılıkları Yükleyin
-Proje betiklerinin ihtiyaç duyduğu Python kütüphanelerini yükleyin.
+### Adım 3: Bağımlılıkları Yükleyin
 ```bash
 pip install -r requirements.txt
 ```
 
-### 4. Veritabanını Oluşturun
-`schema.sql` (veya şema dosyanızın adı) dosyasını kullanarak SQLite veritabanı dosyasını (`proje.db` gibi) oluşturun.
+### Adım 4: Uygulamayı Başlatın
 ```bash
-# schema.sql dosyasını okuyup proje.db adında bir veritabanı oluşturur
-sqlite3 proje.db < schema.sql
+python app.py
 ```
 
-### 5. Betikleri Çalıştırın
-Veritabanını harici API'den gelen verilerle doldurun ve analizleri çalıştırın.
+Tarayıcınızda terminalde çıkan adrese gidin.
 
-**API'den Veri Çekme:**
-```bash
-python main.py
+### İlk Kullanıcı Oluşturma
+1. Kayıt ol butonuna basarak register sayfasına gidin
+2. Kullanıcı adı, e-posta ve şifre belirleyin
+3. Giriş yapın ve keşfetmeye başlayın!
+
+---
+
+## 📊 Veritabanı Şeması
+
+Proje, aşağıdaki ana tablolardan oluşur:
+
+- **users** - Kullanıcı hesap bilgileri
+- **productions** - Film ve dizi verileri
+- **contributors** - Yapımlarda yer almış oyuncu, yönetmen ve yazar verileri
+- **reviews** - Kullanıcı incelemeleri ve puanları
+- **lists** - Kullanıcı listeleri
+- **productions_in_lists** - Liste içerikleri (many-to-many)
+- **follows** - Takip ilişkileri
+
+Detaylı EER diyagramı için `Document/` klasörüne bakınız.
+
+---
+
+## 🎯 API Endpoints
+
+### Kimlik Doğrulama
+- `POST /login` - Kullanıcı girişi
+- `POST /register` - Yeni kullanıcı kaydı
+- `GET /logout` - Oturumu sonlandır
+
+### Film İşlemleri
+- `GET /api/productions` - Film listesi (filtreleme & sayfalama)
+- `GET /api/production/<id>` - Film detayları
+- `GET /api/search?q=<query>` - Film arama
+
+### İnceleme ve Puanlama
+- `POST /api/review` - İnceleme oluştur/güncelle
+- `GET /api/reviews/<production_id>` - Film incelemelerini getir
+- `POST /api/like` - Film beğen/beğeniyi kaldır
+
+### Liste Yönetimi
+- `GET /api/lists` - Kullanıcı listelerini getir
+- `POST /api/list/create` - Yeni liste oluştur
+- `PUT /api/list/rename` - Liste adını değiştir
+- `DELETE /api/list/delete` - Liste sil
+- `POST /api/list/add` - Listeye film ekle
+- `POST /api/list/remove` - Listeden film çıkar
+
+### Profil ve İstatistikler
+- `GET /api/profile/stats` - Kullanıcı istatistikleri
+- `GET /api/profile/activity` - Son aktiviteler
+- `POST /api/settings/update` - Hesap bilgilerini güncelle
+
+---
+
+## 🔐 Güvenlik Özellikleri
+
+- **Şifre Hashleme**: SHA-256 algoritması
+- **Session Management**: Flask-Session ile sunucu taraflı oturum
+- **SQL Injection Koruması**: Parametreli sorgular
+- **XSS Koruması**: Input sanitization ve Jinja2 auto-escaping
+- **CSRF Token**: Form isteklerinde güvenlik tokeni (geliştirme aşamasında)
+
+---
+
+## 🎨 Özellik Detayları
+
+### Yarım Yıldız Puanlama Sistemi
+Kullanıcılar filmleri 0-5 arası 0.5'lik adımlarla puanlayabilir. Sistem, CSS ve JavaScript kombinasyonu ile görsel olarak yarım yıldızları destekler:
+
+```javascript
+// 3.5 yıldız örneği
+★★★⯨☆ (3.5 / 5.0)
 ```
 
-**Benzersiz Film Sayısını Hesaplama:**
-```bash
-python unique_film_count.py
+### Dinamik Arama (Debounce)
+Kullanıcı yazmayı bıraktıktan 300ms sonra arama tetiklenir, böylece gereksiz API çağrıları önlenir:
+
+```javascript
+let searchTimeout;
+searchInput.addEventListener('input', (e) => {
+    clearTimeout(searchTimeout);
+    searchTimeout = setTimeout(() => {
+        performSearch(e.target.value);
+    }, 300);
+});
 ```
+
+### Single Page Application (SPA) Yapısı
+Sayfa yenilemeden içerik değişimi sağlanır:
+
+```javascript
+function navigateTo(page) {
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    document.getElementById(page + '-page').classList.add('active');
+    window.history.pushState({page}, '', `/${page}`);
+}
+```
+
+---
+
+## 👨‍💻 Geliştiriciler
+
+**[Ali Emre YENİHAYAT]**
+- GitHub: [alalayom](https://github.com/alalayom)
+- LinkedIn: [linkedin.com/in/ali-emre-yenihayat-532b2b2ab/](https://www.linkedin.com/in/ali-emre-yenihayat-532b2b2ab/)
+- E-posta: alalayom@gmail.com
+
+**[Berk ÜLKER]**
+- GitHub: [u-bharaki](https://github.com/u-bharaki)
+- LinkedIn: [linkedin.com/in/berk--ulker/](https://www.linkedin.com/in/berk--ulker/)
+- E-posta: berk.ulker.ce@gmail.com
+
+**[Duygu AKMAN]**
+- GitHub: [DUYGUAKMAN](https://github.com/DUYGUAKMAN)
+- LinkedIn: [linkedin.com/in/duygu-akman-a28421259/](https://www.linkedin.com/in/duygu-akman-a28421259/)
+- E-posta: duyguaakman@gmail.com
+
+---
