@@ -478,13 +478,17 @@ def add_review():
         ''', (current_user_id, data['productionId'], data['score'], data['text']))
 
         site_rating_data = db.execute('''
-            SELECT AVG(score) as site_rating FROM reviews WHERE production_id = ?
+            SELECT SUM(score) as site_rating_sum FROM reviews WHERE production_id = ?
         ''', (data['productionId'],)).fetchone()
 
+        site_rating_sum = site_rating_data['site_rating_sum']
+        if site_rating_sum is None:
+            site_rating = 0.0
+
         db.execute('''
-            UPDATE productions SET site_rating = ?, site_votes = site_votes + 1
+            UPDATE productions SET site_rating = ROUND(? / (site_votes+1), 1), site_votes = site_votes + 1
             WHERE id = ?
-        ''', (site_rating_data['site_rating'] if None else 0, data['productionId']))
+        ''', (site_rating_sum, data['productionId']))
         db.commit()
         return jsonify({'success': True})
     except Exception as e:

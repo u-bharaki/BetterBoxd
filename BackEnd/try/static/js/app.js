@@ -138,6 +138,7 @@ function calculateScore(e, container) {
     return score;
 }
 
+// For review page
 function renderStars(container, score) {
     let html = '';
 
@@ -150,6 +151,41 @@ function renderStars(container, score) {
     for (let i = 0; i < emptyStars; i++) html += STAR_ICONS.EMPTY;
 
     container.innerHTML = html;
+}
+
+function getStars(rating, maxRating) {
+    const normalized = (rating / maxRating) * 5; // 5 yıldız sistemine normalize et
+    const fullStars = Math.floor(normalized);
+    const remainder = normalized % 1;
+
+    let stars = '';
+
+    // Tam dolu yıldızlar
+    for (let i = 0; i < fullStars; i++) {
+        stars += '★';
+    }
+
+    // Yarım yıldız kontrolü (0.25'ten büyükse yarım yıldız)
+    if (remainder >= 0.25 && remainder < 0.75) {
+        // Yarım yıldız karakteri - en uyumlu olanlar:
+        //stars += '⭐'; // Seçenek 1: Emoji yıldız (en garantili)
+        // stars += '✪'; // Seçenek 2: Çemberli yıldız
+         stars += '⯨'; // Seçenek 3: Yarım dolu yıldız
+    } else if (remainder >= 0.75) {
+        // 0.75 ve üzeri ise tam yıldız say
+        stars += '★';
+    }
+
+    // Boş yıldızları hesapla
+    const totalFilledStars = stars.length;
+    const emptyStars = 5 - totalFilledStars;
+
+    // Boş yıldızlar
+    for (let i = 0; i < emptyStars; i++) {
+        stars += '☆';
+    }
+
+    return stars;
 }
 
 // --- LOAD ---
@@ -171,10 +207,15 @@ async function loadProduction(id) {
         document.querySelector('.production-title').textContent = prod.title;
         document.querySelector('.production-year').textContent = prod.year;
         document.querySelector('.production-meta span:last-child').textContent = prod.director;
-        document.querySelector('.imdb_score').textContent = prod.imdb_rating;
-        document.querySelector('.imdb_votes').textContent = prod.imdb_votes;
-        document.querySelector('.site_score').textContent = prod.site_rating;
-        document.querySelector('.site_votes').textContent = prod.site_votes;
+
+        document.querySelector('.stars_imdb_rating').textContent = getStars(prod.imdb_rating || 0.0, 10);
+        document.querySelector('.imdb_score').textContent = prod.imdb_rating || 0.0;
+        document.querySelector('.imdb_votes').textContent = `(${prod.imdb_votes || 0})`;
+
+        document.querySelector('.stars_site_rating').textContent = getStars(prod.site_rating || 0.0, 10);
+        document.querySelector('.site_score').textContent = prod.site_rating || 0.0;
+        document.querySelector('.site_votes').textContent = `(${prod.site_votes || 0})`;
+
         document.querySelector('.plot').textContent = prod.plot;
 
         // Resimler
@@ -355,6 +396,7 @@ async function loadFeed() {
         console.error(e);
     }
 }
+
 async function updateSettings() {
     const new_username = document.getElementById("settings-username").value;
     const new_email = document.getElementById("settings-email").value;
@@ -389,9 +431,6 @@ async function updateSettings() {
         msg.textContent = "❌ Sunucuya ulaşılamadı.";
     }
 }
-
-
-
 
 let ratingChartInstance = null;
 let genreChartInstance = null;
@@ -673,7 +712,6 @@ async function createNewList() {
         const result = await response.json();
 
         if (result.success) {
-
             loadMyLists();
         } else {
             alert("Hata: " + result.error);
@@ -748,7 +786,6 @@ async function openListSelectionModal(prodId) {
         const response = await fetch(`/api/list/${targetProdId}/lists_status`);
         const lists = await response.json();
         container.innerHTML = '';
-
         if (lists.length === 0) {
             container.innerHTML = '<p class="text-gray-500 text-center text-sm">Hiç listen yok. Aşağıdan oluşturabilirsin.</p>';
         }
@@ -811,7 +848,7 @@ async function createNewListFromModal() {
         const response = await fetch('/api/list/create', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ name: name })
+            body: JSON.stringify({ list_name: name })
         });
         if(response.ok) {
             openListSelectionModal(window.activeModalProductionId);
