@@ -141,7 +141,7 @@ def get_all_productions():
     db = get_db()
 
     page = int(request.args.get('page', 1))
-    limit = 20
+    limit = 50
     offset = (page - 1) * limit
 
     genres = request.args.get('genres', 'all')
@@ -149,12 +149,17 @@ def get_all_productions():
     sort_by = request.args.get('sort', 'pop')
     letter = request.args.get('letter', 'all')
 
-    query = """
-        SELECT p.id, p.title, p.start_year, p.poster_link, 
-               AVG(r.score) as avg_score
-        FROM productions p
-        LEFT JOIN reviews r ON p.id = r.production_id
+    count_query_select = """
+        SELECT COUNT(*)
     """
+    query_select = """
+        SELECT p.id, p.title, p.start_year, p.poster_link, 
+               p.site_rating
+        """
+    query = """
+        FROM productions p
+        """
+
     params = []
     where_clauses = []
 
@@ -164,12 +169,9 @@ def get_all_productions():
         else:
             where_clauses.append("p.title LIKE ?")
             params.append(f"{letter}%")
-
-
     if genres and genres != 'all':
         where_clauses.append("p.genres LIKE ?")
         params.append(f'%{genres}%')
-
     if year and year != 'all':
         where_clauses.append("p.start_year = ?")
         params.append(year)
@@ -177,10 +179,13 @@ def get_all_productions():
     if where_clauses:
         query += " WHERE " + " AND ".join(where_clauses)
 
-    query += " GROUP BY p.id"
+
+    total_items = db.execute(count_query_select+query, params).fetchone()[0]
+    total_pages = (total_items + limit - 1) // limit
+
 
     if sort_by == 'rating':
-        query += " ORDER BY avg_score DESC"
+        query += " ORDER BY p.site_rating DESC"
     elif sort_by == 'alpha':
         query += " ORDER BY p.title ASC"
     elif sort_by == 'new':
@@ -191,10 +196,7 @@ def get_all_productions():
     query += " LIMIT ? OFFSET ?"
     params.extend([limit, offset])
 
-    productions = db.execute(query, params).fetchall()
-
-    total_items = db.execute("SELECT COUNT(*) FROM productions").fetchone()[0]
-    total_pages = (total_items + limit - 1) // limit
+    productions = db.execute(query_select+query, params).fetchall()
 
     return jsonify({
         'productions': [{
@@ -202,7 +204,7 @@ def get_all_productions():
             'title': row['title'],
             'year': row['start_year'],
             'poster': row['poster_link'],
-            'rating': round(row['avg_score'], 1) if row['avg_score'] else 0
+            'rating': round(row['site_rating'], 1) if row['site_rating'] else 0
         } for row in productions],
         'total_pages': total_pages,
         'current_page': page
@@ -450,7 +452,7 @@ def search_productions():
         FROM productions
         WHERE title LIKE ?
         ORDER BY title ASC
-        LIMIT 5
+        LIMIT 50
     '''
 
     results = db.execute(sql, (f'%{query}%',)).fetchall()
