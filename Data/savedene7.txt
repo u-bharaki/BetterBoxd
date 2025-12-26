@@ -1,8 +1,0 @@
-databases/movies_28-11-2025__23-08-12.db
-raw_excels/omdb_full_dataset_02-12-2025__15-02-37.xlsx
-logs/02-12-2025__10-20-02.log
-1592
-82
-4600
-90
-4

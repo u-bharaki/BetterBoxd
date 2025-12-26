@@ -435,10 +435,20 @@ async function updateSettings() {
 let ratingChartInstance = null;
 let genreChartInstance = null;
 
-async function loadProfile() {
+async function loadProfile(user_id = null) {
     try {
-        const response = await fetch('/api/profile');
+
+        url = user_id ? `/api/profile/${user_id}` : '/api/profile';
+
+        const response = await fetch(url);
         const data = await response.json();
+
+        if(data.error) {
+            alert("Kullanıcı bulunamadı");
+            return;
+        }
+
+        window.currentProfileId = data.user_id
 
         // İstatistikleri Yaz
         document.getElementById('profile-fullname').textContent = data.fullname;
@@ -618,7 +628,6 @@ async function loadMyLists() {
     }
 }
 
-// 1. Düzenleme Modunu Aç
 function enableEdit(event, listId) {
     event.stopPropagation();
     // Başlık divini gizle
@@ -634,7 +643,6 @@ function enableEdit(event, listId) {
     input.value = val;
 }
 
-// 2. Tuşlara Basılınca (Enter = Kaydet, Esc = İptal)
 function handleEditKeydown(event, listId) {
     if (event.key === 'Enter') {
         const newName = event.target.value;
@@ -645,13 +653,11 @@ function handleEditKeydown(event, listId) {
     }
 }
 
-// 3. Düzenlemeyi İptal Et (Veya dışarı tıklayınca kaydet)
 function cancelEdit(listId) {
     document.getElementById(`title-box-${listId}`).classList.remove('hidden');
     document.getElementById(`input-${listId}`).classList.add('hidden');
 }
 
-// 4. İsmi Sunucuya Kaydet
 async function saveListName(listId, newName) {
     if (!newName.trim()) {
         alert("İsim boş olamaz");
@@ -680,7 +686,6 @@ async function saveListName(listId, newName) {
     }
 }
 
-// 5. Silme (Artık çarpı butonu çağırıyor)
 async function deleteList(listId) {
     if (!confirm("Bu listeyi silmek istediğine emin misin?")) return;
 
@@ -918,6 +923,127 @@ function openTab(event, tabId) {
     // 4. TIKLANAN BUTONU AKTİF YAP (Sarı yap)
     // event.currentTarget tıklanan butondur
     event.currentTarget.className = "tab-btn active text-[#FFC107] border-b-2 border-[#FFC107] py-4 font-bold transition cursor-pointer";
+}
+
+function openProfileTab(event, tabId) {
+    console.log("Tıklandı! Hedef Tab:", tabId);
+    // 1. Tüm içerik kutularını gizle
+    document.querySelectorAll('.profile-tab-content').forEach(content => {
+        content.classList.add('hidden');
+        content.classList.remove('block');
+    });
+
+    // 2. Tüm tab butonlarını pasif (Gri) yap
+    document.querySelectorAll('.profile-tab-btn').forEach(btn => {
+        btn.classList.remove('text-[#FFC107]', 'border-b-2', 'border-[#FFC107]', 'font-bold', 'active');
+        btn.classList.add('text-gray-500', 'font-medium');
+    });
+
+    // 3. İstenen kutuyu aç (Hedef)
+    const targetContent = document.getElementById(tabId);
+    if (targetContent) {
+        targetContent.classList.remove('hidden');
+        targetContent.classList.add('block');
+    }
+
+    // 4. Eğer tıklanan şey bir Tab Butonuysa onu Sarı yap
+    if (event && event.currentTarget && event.currentTarget.classList.contains('profile-tab-btn')) {
+        event.currentTarget.classList.remove('text-gray-500', 'font-medium');
+        event.currentTarget.classList.add('text-[#FFC107]', 'border-b-2', 'border-[#FFC107]', 'font-bold', 'active');
+    }
+
+    const userId = 1;
+
+    if (tabId === 'tab-followers') {
+        console.log("Takipçiler çekiliyor...");
+        loadFollowers(userId);
+    } else if (tabId === 'tab-following') {
+        console.log("Takip edilenler çekiliyor...");
+        loadFollowing(userId);
+    }
+}
+
+// --- KULLANICI LİSTESİ MODALI (Takipçi/Takip Edilen) ---
+
+function openUserListModal(type) {
+    const modal = document.getElementById('userListModal');
+    const title = document.getElementById('userListModalTitle');
+    const container = document.getElementById('userListModalContainer');
+
+    // Modalı Aç
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+
+    // Yükleniyor mesajı
+    container.innerHTML = '<p class="text-gray-400 text-center py-4">Yükleniyor...</p>';
+
+    const userId = window.currentProfileId || 1;
+
+    if (type === 'followers') {
+        title.textContent = 'Takipçiler';
+        fetchUserList(userId, 'followers', container);
+    } else {
+        title.textContent = 'Takip Edilenler';
+        fetchUserList(userId, 'following', container);
+    }
+}
+
+function closeUserListModal() {
+    const modal = document.getElementById('userListModal');
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
+}
+
+async function fetchUserList(userId, type, container) {
+    try {
+        const response = await fetch(`/api/user/${userId}/${type}`);
+        const users = await response.json();
+
+        container.innerHTML = '';
+
+        if (users.length === 0) {
+            container.innerHTML = '<p class="text-gray-500 text-center text-sm py-4">Liste boş.</p>';
+            return;
+        }
+
+        users.forEach(user => {
+            // Dikey Liste Elemanı Tasarımı
+            container.innerHTML += `
+                <div class="flex items-center gap-3 p-3 bg-[#1C2329] rounded-lg hover:bg-[#3A424A] transition border border-transparent hover:border-gray-600 cursor-pointer"
+                    onclick="loadProfile('${user.id}'); closeUserListModal()">
+                    <!-- Avatar -->
+                    <div class="w-10 h-10 bg-[#FFC107] rounded-full flex items-center justify-center font-bold text-[#14181C] text-sm shrink-0">
+                        ${user.username.charAt(0).toUpperCase()}
+                    </div>
+                    
+                    <!-- İsim Bilgileri -->
+                    <div class="overflow-hidden">
+                        <h4 class="text-white font-bold text-sm truncate">${user.first_name} ${user.last_name}</h4> 
+                        <p class="text-gray-400 text-xs truncate">@${user.username}</p>
+                    </div>
+                </div>
+            `;
+        });
+
+    } catch (e) {
+        console.error(e);
+        container.innerHTML = '<p class="text-red-500 text-center text-sm">Hata oluştu.</p>';
+    }
+}
+
+// Kullanıcı Kartı HTML Şablonu
+function createUserCard(user) {
+    return `
+        <div class="flex items-center gap-4 bg-[#2C343A] p-4 rounded-lg border border-[#3A424A] hover:border-[#FFC107] transition cursor-pointer">
+            <div class="w-12 h-12 bg-[#FFC107] rounded-full flex items-center justify-center font-bold text-[#14181C] text-lg shrink-0">
+                ${user.username.charAt(0).toUpperCase()}
+            </div>
+            <div class="overflow-hidden">
+                <h4 class="text-white font-bold truncate">${user.first_name} ${user.last_name}</h4>
+                <p class="text-gray-400 text-sm truncate">@${user.username}</p>
+            </div>
+        </div>
+    `;
 }
 
 function toggleProfileDropdown() {

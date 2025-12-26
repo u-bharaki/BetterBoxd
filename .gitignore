@@ -2,12 +2,10 @@
 Data/api_keys.txt
 
 # Databases
-Data/*.db
-Data/*.db-journal*
-Data/*.sqlite
-Data/*.sqlite3
-Data/databases/
-FrontEnd/Webs/*.db
+**/*.db
+**/*.db-journal*
+**/*.sqlite
+**/*.sqlite3
 
 # Logs
 Data/*.log
@@ -26,4 +24,4 @@ FrontEnd/Webs/series
 FrontEnd/Webs/web_pages
 
 # IDE Config
-.idea/
+.idea/**

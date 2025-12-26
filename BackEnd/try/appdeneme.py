@@ -299,28 +299,34 @@ def get_feed():
     } for row in feed_items])
 
 @app.route('/api/profile')
+@app.route('/api/profile/<string:user_id>')
 @login_required
-def get_profile():
+def get_profile(user_id=None):
+    if user_id == None:
+        user_id = session['user_id']
+
     db = get_db()
-    current_user_id = session['user_id']
 
     # 1. Kullanıcı Bilgileri
-    user = db.execute(f'SELECT * FROM {USERS_TABLE_NAME} WHERE id = ?', (current_user_id,)).fetchone()
+    user = db.execute(f'SELECT * FROM {USERS_TABLE_NAME} WHERE id = ?', (user_id,)).fetchone()
+
+    if not user:
+        return jsonify({'error': 'Kullanıcı bulunamadı'}), 404
 
     # 2. İstatistikler
-    total_watched = db.execute('SELECT COUNT(*) FROM reviews WHERE user_id = ?', (current_user_id,)).fetchone()[0]
-    total_lists = db.execute('SELECT COUNT(*) FROM lists WHERE user_id = ?', (current_user_id,)).fetchone()[0]
+    total_watched = db.execute('SELECT COUNT(*) FROM reviews WHERE user_id = ?', (user_id,)).fetchone()[0]
+    total_lists = db.execute('SELECT COUNT(*) FROM lists WHERE user_id = ?', (user_id,)).fetchone()[0]
 
     try:
-        followers = db.execute('SELECT COUNT(*) FROM follows WHERE followed_user_id = ?', (current_user_id,)).fetchone()[0]
-        following = db.execute('SELECT COUNT(*) FROM follows WHERE follower_user_id = ?', (current_user_id,)).fetchone()[0]
+        followers = db.execute('SELECT COUNT(*) FROM follows WHERE followed_user_id = ?', (user_id,)).fetchone()[0]
+        following = db.execute('SELECT COUNT(*) FROM follows WHERE follower_user_id = ?', (user_id,)).fetchone()[0]
     except:
         followers = 0
         following = 0
 
     # 3. Puan Dağılımı Grafiği İçin Veri
     rating_counts = {i: 0 for i in range(1, 11)}
-    ratings_query = db.execute('SELECT score FROM reviews WHERE user_id = ?', (current_user_id,)).fetchall()
+    ratings_query = db.execute('SELECT score FROM reviews WHERE user_id = ?', (user_id,)).fetchall()
     for row in ratings_query:
         score = int(row['score'])
         if 1 <= score <= 10:
@@ -332,7 +338,7 @@ def get_profile():
         SELECT p.genres FROM reviews r
         JOIN productions p ON r.production_id = p.id
         WHERE r.user_id = ?
-    ''', (current_user_id,)).fetchall()
+    ''', (user_id,)).fetchall()
 
     all_genres = []
     for row in genres_query:
@@ -351,17 +357,31 @@ def get_profile():
         JOIN productions p ON r.production_id = p.id
         WHERE r.user_id = ?
         ORDER BY r.id DESC LIMIT 5
-    ''', (current_user_id,)).fetchall()
+    ''', (user_id,)).fetchall()
 
     recent_activity = [{'title': r['title'], 'poster': r['poster_link'], 'score': r['score'], 'text': r['context']} for r in recent]
 
+    print(f"""
+        'user_id': {user_id},
+        'username': {user['username']},
+        'fullname': f"{user['first_name']} {user['last_name']}",
+        'stats': 'watched': {total_watched}, 'lists': {total_lists}, 'followers': {followers}, 'following': {following},
+        'charts': 'rating_data': {rating_distribution}, 'genre_labels': {genre_labels}, 'genre_data': {genre_data},
+        'recent_activity': {recent_activity}
+    """)
+
     return jsonify({
+        'user_id': user_id,
         'username': user['username'],
         'fullname': f"{user['first_name']} {user['last_name']}",
         'stats': {'watched': total_watched, 'lists': total_lists, 'followers': followers, 'following': following},
         'charts': {'rating_data': rating_distribution, 'genre_labels': genre_labels, 'genre_data': genre_data},
         'recent_activity': recent_activity
     })
+
+@login_required
+def get_current_profile():
+    return get_profile(session['user_id'])
 
 @app.route('/api/my-lists')
 @login_required
@@ -436,6 +456,51 @@ def get_production_lists_status(production_id):
     except Exception as e:
         print(f"LİSTE STATUS HATASI: {e}")
         return jsonify({'error': str(e), 'success': False})
+
+@app.route('/api/user/<user_id>/followers')
+@login_required
+def get_user_followers(user_id):
+    db = get_db()
+
+    query = """
+        SELECT f.follower_user_id, u.first_name, u.last_name, u.username
+        FROM follows as f
+        JOIN users as u ON u.id = f.follower_user_id
+        WHERE f.followed_user_id = ?
+    """
+    params = (user_id,)
+
+    followers = db.execute(query, params).fetchall()
+
+    return jsonify([{
+        'id': row['follower_user_id'],
+        'first_name': row['first_name'],
+        'last_name': row['last_name'],
+        'username': row['username']
+    } for row in followers])
+
+
+@app.route('/api/user/<user_id>/following')
+@login_required
+def get_user_followed(user_id):
+    db = get_db()
+
+    query = """
+        SELECT f.followed_user_id, u.first_name, u.last_name, u.username
+        FROM follows as f
+        JOIN users as u ON u.id = f.followed_user_id
+        WHERE f.follower_user_id = ?
+    """
+    params = (user_id,)
+
+    following = db.execute(query, params).fetchall()
+
+    return jsonify([{
+                       'id': row['followed_user_id'],
+                       'first_name': row['first_name'],
+                       'last_name': row['last_name'],
+                       'username': row['username']
+                   } for row in following])
 
 @app.route('/api/search')
 @login_required
