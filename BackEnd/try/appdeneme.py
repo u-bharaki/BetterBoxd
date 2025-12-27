@@ -260,14 +260,14 @@ def get_production_cast(prod_id):
 def get_production_reviews(prod_id):
     db = get_db()
     reviews = db.execute('''
-        SELECT r.context, r.score, u.username 
+        SELECT r.context, r.score, u.username, u.id
         FROM reviews r
         JOIN users u ON r.user_id = u.id
         WHERE r.production_id = ?
         ORDER BY r.id DESC LIMIT 5
     ''', (prod_id,)).fetchall()
 
-    return jsonify([{'author': r['username'], 'score': r['score'], 'text': r['context']} for r in reviews])
+    return jsonify([{'user_id': r['id'], 'author': r['username'], 'score': r['score'], 'text': r['context']} for r in reviews])
 
 @app.route('/api/feed')
 @login_required

@@ -11,7 +11,7 @@ const IMG_FALLBACK = {
 };
 
 // --- SAYFA YÖNLENDİRME (ROUTING) ---
-function navigateTo(pageName) {
+function navigateTo(pageName, shouldLoadData = true) {
     // Sayfaları Gizle/Göster
     document.querySelectorAll('.page').forEach(page => page.classList.remove('active'));
     const targetPage = document.getElementById(pageName + '-page');
@@ -22,10 +22,13 @@ function navigateTo(pageName) {
     if(dropdown) dropdown.classList.remove('active');
 
     // Verileri Yükle
-    if (pageName === 'feed') loadFeed();
-    else if (pageName === 'lists') loadMyLists();
-    else if (pageName === 'profile') loadProfile();
-    else if (pageName === 'films') loadAllMovies();
+    if (shouldLoadData) {
+        if (pageName === 'feed') loadFeed();
+        else if (pageName === 'lists') loadMyLists();
+        else if (pageName === 'profile') loadProfile();
+        else if (pageName === 'films') loadAllMovies();
+    }
+    window.scrollTo(0, 0);
 }
 
 // --- MODAL VE REVIEW İŞLEMLERİ ---
@@ -346,11 +349,17 @@ async function loadReviews(id) {
         container.innerHTML += `
             <div class="bg-[#2C343A] p-6 rounded-xl mb-4 border border-[#3A424A]">
                 <div class="flex items-center gap-4 mb-3">
-                    <div class="w-10 h-10 rounded-full bg-[#FFC107] flex items-center justify-center font-bold text-[#14181C]">
+                    <button class="w-10 h-10 rounded-full bg-[#FFC107] flex items-center justify-center font-bold text-[#14181C] cursor-pointer 
+                        transform transition-all duration-300 
+                        hover:scale-110 hover:bg-[#FFD54F] hover:shadow-[0_0_15px_rgba(255,193,7,0.5)]"
+                        onclick="loadProfile('${r.user_id}'); navigateTo('profile', false)">
                         ${r.author.charAt(0).toUpperCase()}
-                    </div>
+                    </button>
                     <div>
-                        <div class="text-white font-bold">${r.author}</div>
+                        <button onclick="loadProfile('${r.user_id}'); navigateTo('profile', false)" class="text-white font-bold text-left transition-colors duration-200
+                               hover:text-[#FFC107] hover:underline hover:decoration-2 hover:underline-offset-4">
+                            ${r.author}
+                        </button>
                         <div class="text-[#FFC107] text-sm">${starsStr} (${r.score}/10)</div>
                     </div>
                 </div>
