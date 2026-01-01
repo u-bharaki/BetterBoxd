@@ -302,18 +302,29 @@ def get_feed():
 @app.route('/api/profile/<string:user_id>')
 @login_required
 def get_profile(user_id=None):
+
+    current_user_id = session['user_id']
     if user_id == None:
-        user_id = session['user_id']
+        user_id = current_user_id
 
     db = get_db()
 
-    # 1. Kullanıcı Bilgileri
+    # Kullanıcı Bilgileri
     user = db.execute(f'SELECT * FROM {USERS_TABLE_NAME} WHERE id = ?', (user_id,)).fetchone()
 
     if not user:
         return jsonify({'error': 'Kullanıcı bulunamadı'}), 404
 
-    # 2. İstatistikler
+    is_following = False
+    if session['user_id'] != user['id']:
+        check = db.execute('SELECT 1 FROM follows WHERE follower_user_id = ? AND followed_user_id = ?', (current_user_id, user['id'])).fetchone()
+        if check:
+            is_following = True
+
+
+
+
+    # İstatistikler
     total_watched = db.execute('SELECT COUNT(*) FROM reviews WHERE user_id = ?', (user_id,)).fetchone()[0]
     total_lists = db.execute('SELECT COUNT(*) FROM lists WHERE user_id = ?', (user_id,)).fetchone()[0]
 
@@ -324,7 +335,7 @@ def get_profile(user_id=None):
         followers = 0
         following = 0
 
-    # 3. Puan Dağılımı Grafiği İçin Veri
+    # Puan Dağılımı Grafiği İçin Veri
     rating_counts = {i: 0 for i in range(1, 11)}
     ratings_query = db.execute('SELECT score FROM reviews WHERE user_id = ?', (user_id,)).fetchall()
     for row in ratings_query:
@@ -333,7 +344,7 @@ def get_profile(user_id=None):
             rating_counts[score] += 1
     rating_distribution = [rating_counts[i] for i in range(1, 11)]
 
-    # 4. Favori Türler Grafiği İçin Veri
+    # Favori Türler Grafiği İçin Veri
     genres_query = db.execute('''
         SELECT p.genres FROM reviews r
         JOIN productions p ON r.production_id = p.id
@@ -350,7 +361,7 @@ def get_profile(user_id=None):
     genre_labels = [item[0] for item in top_genres]
     genre_data = [item[1] for item in top_genres]
 
-    # 5. Son Aktiviteler
+    # Son Aktiviteler
     recent = db.execute('''
         SELECT r.score, r.context, p.title, p.poster_link
         FROM reviews r
@@ -361,19 +372,12 @@ def get_profile(user_id=None):
 
     recent_activity = [{'title': r['title'], 'poster': r['poster_link'], 'score': r['score'], 'text': r['context']} for r in recent]
 
-    print(f"""
-        'user_id': {user_id},
-        'username': {user['username']},
-        'fullname': f"{user['first_name']} {user['last_name']}",
-        'stats': 'watched': {total_watched}, 'lists': {total_lists}, 'followers': {followers}, 'following': {following},
-        'charts': 'rating_data': {rating_distribution}, 'genre_labels': {genre_labels}, 'genre_data': {genre_data},
-        'recent_activity': {recent_activity}
-    """)
-
     return jsonify({
         'user_id': user_id,
         'username': user['username'],
         'fullname': f"{user['first_name']} {user['last_name']}",
+        'is_own_profile': (current_user_id == user['id']),
+        'is_following': is_following,
         'stats': {'watched': total_watched, 'lists': total_lists, 'followers': followers, 'following': following},
         'charts': {'rating_data': rating_distribution, 'genre_labels': genre_labels, 'genre_data': genre_data},
         'recent_activity': recent_activity
@@ -581,6 +585,45 @@ def add_list():
         return jsonify({'success': True})
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/api/user/<string:target_id>/follow', methods=['POST'])
+@login_required
+def follow_user(target_id):
+    print("BABAN")
+    db = get_db()
+    current_user_id = session['user_id']
+
+    if current_user_id == target_id:
+        return jsonify({'success': False, 'error': 'You cannot follow yourself'}), 400
+    print("BABAN1")
+
+    try:
+        check = db.execute('SELECT 1 FROM follows WHERE follower_user_id = ? AND followed_user_id = ?', (current_user_id, target_id)).fetchone()
+        if not check:
+            db.execute('INSERT INTO follows(follower_user_id, followed_user_id) VALUES (?, ?)', (current_user_id, target_id))
+            db.commit()
+        print("BABAN2")
+        return jsonify({'success': True})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/api/user/<string:target_id>/unfollow', methods=['POST'])
+@login_required
+def unfollow_user(target_id):
+    db = get_db()
+    current_user_id = session['user_id']
+
+    if current_user_id == target_id:
+        return jsonify({'success': False, 'error': 'You cannot unfollow yourself'}), 400
+
+    try:
+        check = db.execute('SELECT 1 FROM follows WHERE follower_user_id = ? AND followed_user_id = ?', (current_user_id, target_id)).fetchone()
+        if check:
+            db.execute('DELETE FROM follows WHERE follower_user_id = ? AND followed_user_id = ?', (current_user_id, target_id))
+            db.commit()
+        return jsonify({'success': True})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
 
 # ----- DELETE -----
 

@@ -467,6 +467,37 @@ async function loadProfile(user_id = null) {
         document.getElementById('stat-following').textContent = data.stats.following;
         document.getElementById('stat-followers').textContent = data.stats.followers;
 
+        // Profile Action Buttons
+        const actionContainer = document.getElementById('profile-actions');
+        if (actionContainer) {
+            actionContainer.innerHTML = '';
+
+            if (data.is_own_profile) {
+                actionContainer.innerHTML = `
+                    <button class="bg-[#2C343A] text-white px-6 py-2 rounded-full font-bold border border-[#3A424A] hover:bg-[#3A424A] cursor-not-allowed opacity-50" title="Yakında...">
+                        Profili Düzenle
+                    </button>
+                `
+            } else {
+                if (data.is_following) {
+                    actionContainer.innerHTML = `
+                        <button onclick="toggleFollow('${data.user_id}', 'unfollow')" 
+                                class="bg-[#2C343A] text-white px-6 py-2 rounded-full font-bold border border-[#3A424A] hover:border-red-500 hover:text-red-500 transition">
+                            Takipten Çık
+                        </button>
+                    `;
+                } else {
+                    actionContainer.innerHTML = `
+                        <button onclick="toggleFollow('${data.user_id}', 'follow')" 
+                                class="bg-[#FFC107] text-[#14181C] px-6 py-2 rounded-full font-bold hover:bg-[#FFD54F] transition shadow-lg hover:shadow-yellow-500/20">
+                            Takip Et
+                        </button>
+                    `;
+                }
+            }
+        }
+
+
         // Son Aktiviteleri Listele
         const activityContainer = document.getElementById('profile-recent-activity');
         if (data.recent_activity.length === 0) {
@@ -844,6 +875,24 @@ async function toggleProductionInList(listId, prodId, checkbox) {
         checkbox.checked = !checkbox.checked;
     } finally {
         checkbox.disabled = false;
+    }
+}
+
+async function toggleFollow(targetId, action) {
+    try {
+        const response = await fetch(`/api/user/${targetId}/${action}`, {
+            method: 'POST'
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+            loadProfile(targetId);
+        } else {
+            alert("İşlem başarısız: " + result.error);
+        }
+    } catch (e) {
+        console.error("Takip hatası: ", e);
     }
 }
 
