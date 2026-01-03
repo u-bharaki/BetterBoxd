@@ -363,14 +363,14 @@ def get_profile(user_id=None):
 
     # Son Aktiviteler
     recent = db.execute('''
-        SELECT r.score, r.context, p.title, p.poster_link
+        SELECT r.production_id, r.score, r.context, p.title, p.poster_link
         FROM reviews r
         JOIN productions p ON r.production_id = p.id
         WHERE r.user_id = ?
         ORDER BY r.id DESC LIMIT 5
     ''', (user_id,)).fetchall()
 
-    recent_activity = [{'title': r['title'], 'poster': r['poster_link'], 'score': r['score'], 'text': r['context']} for r in recent]
+    recent_activity = [{'title': r['title'], 'poster': r['poster_link'], 'score': r['score'], 'text': r['context'], 'prod_id': r['production_id']} for r in recent]
 
     return jsonify({
         'user_id': user_id,
@@ -544,9 +544,9 @@ def add_review():
 
     try:
         db.execute('''
-            INSERT INTO reviews (user_id, production_id, score, context)
-            VALUES (?, ?, ?, ?)
-        ''', (current_user_id, data['productionId'], data['score'], data['text']))
+            INSERT INTO reviews (id, user_id, production_id, score, context)
+            VALUES (?, ?, ?, ?, ?)
+        ''', (str(uuid.uuid4()) , current_user_id, data['productionId'], data['score'], data['text']))
 
         site_rating_data = db.execute('''
             SELECT SUM(score) as site_rating_sum FROM reviews WHERE production_id = ?

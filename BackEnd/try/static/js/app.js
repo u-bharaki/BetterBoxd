@@ -195,6 +195,27 @@ function getStars(rating, maxRating) {
 
 async function loadProduction(id) {
     try {
+        // DOM Temizleme
+        document.querySelector('.production-title').textContent = "Yükleniyor...";
+        document.querySelector('.production-year').textContent = "Yükleniyor...";
+        document.querySelector('.production-meta span:last-child').textContent = "Yükleniyor...";
+
+        document.querySelector('.stars_imdb_rating').textContent = "...";
+        document.querySelector('.imdb_score').textContent = "...";
+        document.querySelector('.imdb_votes').textContent = "...";
+
+        document.querySelector('.stars_site_rating').textContent = "...";
+        document.querySelector('.site_score').textContent = "...";
+        document.querySelector('.site_votes').textContent = "...";
+
+        document.querySelector('.plot').textContent = "Yükleniyor...";
+
+        const posterEl = document.querySelector('.poster');
+        const backdropEl = document.querySelector('.backdrop');
+
+        posterEl.src = IMG_FALLBACK.POSTER;
+        backdropEl.src = IMG_FALLBACK.BACKDROP;
+
         const response = await fetch(`/api/production/${id}`);
         const prod = await response.json();
 
@@ -222,9 +243,6 @@ async function loadProduction(id) {
         document.querySelector('.plot').textContent = prod.plot;
 
         // Resimler
-        const posterEl = document.querySelector('.poster');
-        const backdropEl = document.querySelector('.backdrop');
-
         posterEl.onerror = function () { this.src = IMG_FALLBACK.POSTER; };
         backdropEl.onerror = function () { this.src = IMG_FALLBACK.BACKDROP; };
 
@@ -319,7 +337,6 @@ async function loadCast(id) {
         grid.innerHTML += `
             <div class="cast-card text-center">
                 <div class="w-24 h-24 mx-auto mb-2 rounded-full overflow-hidden bg-[#333] border-2 border-[#3A424A]">
-                     <!-- Oyuncu resmi yoksa baş harfini gösterelim veya placeholder -->
                      <img src="${IMG_FALLBACK.AVATAR}" onerror="this.src='${IMG_FALLBACK.AVATAR}'" class="w-full h-full object-cover">
                 </div>
                 <div class="text-white font-bold text-sm">${actor.name}</div>
@@ -332,7 +349,6 @@ async function loadReviews(id) {
     const response = await fetch(`/api/production/${id}/reviews`);
     const reviews = await response.json();
 
-    // 2. Tab (İncelemeler) içeriğini bul
     const container = document.querySelectorAll('.tab-content')[1];
     container.innerHTML = '<h2 class="section-title text-2xl font-bold text-white mb-6">Son İncelemeler</h2>';
 
@@ -508,9 +524,14 @@ async function loadProfile(user_id = null) {
                 const poster = act.poster || 'https://placehold.co/50x75?text=No+Img';
                 html += `
                     <div class="flex gap-3 mb-4 border-b border-[#3A424A] pb-3 last:border-0">
-                        <img src="${poster}" class="w-12 h-16 object-cover rounded">
+                        <img src="${poster}" class="w-12 h-16 object-cover rounded cursor-pointer hover:opacity-80 transition"
+                             onclick="loadProduction('${act.prod_id}'); navigateTo('production')">
                         <div>
-                            <div class="text-white font-bold text-sm truncate w-40">${act.title}</div>
+                            <button 
+                                onclick="loadProduction('${act.prod_id}'); navigateTo('production', false)" 
+                                class="text-white font-bold text-sm truncate w-40 text-left hover:text-[#FFC107] hover:underline transition">
+                                    ${act.title}
+                            </button>
                             <div class="text-[#FFC107] text-xs">★ ${act.score}</div>
                             <p class="text-gray-400 text-xs mt-1 line-clamp-2">${act.text || ''}</p>
                         </div>
