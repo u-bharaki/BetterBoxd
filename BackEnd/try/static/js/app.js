@@ -31,7 +31,7 @@ function navigateTo(pageName, shouldLoadData = true) {
     window.scrollTo(0, 0);
 }
 
-// --- MODAL VE REVIEW İŞLEMLERİ ---
+// --- MODAL İŞLEMLERİ ---
 
 function openModal(prodId) {
     window.activeProductionId = prodId || window.currentProductionId;
@@ -48,6 +48,115 @@ function openModal(prodId) {
 
     document.querySelector('.form-textarea').value = "";
 }
+async function openListSelectionModal(prodId) {
+    const targetProdId = prodId || window.currentProductionId;
+    window.activeModalProductionId = targetProdId;
+
+    const modal = document.getElementById('listSelectionModal');
+    const container = document.getElementById('list-selection-container');
+
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+    container.innerHTML = '<p class="text-gray-400 text-center">Listeler getiriliyor...</p>';
+
+    try {
+        const response = await fetch(`/api/list/${targetProdId}/lists_status`);
+        const lists = await response.json();
+        container.innerHTML = '';
+        if (lists.length === 0) {
+            container.innerHTML = '<p class="text-gray-500 text-center text-sm">Hiç listen yok. Aşağıdan oluşturabilirsin.</p>';
+        }
+
+        lists.forEach(list => {
+            const isChecked = list.has_production ? 'checked' : '';
+
+            container.innerHTML += `
+                <label class="flex items-center justify-between p-3 bg-[#1C2329] rounded-lg hover:bg-[#3A424A] cursor-pointer transition border border-transparent hover:border-gray-600">
+                    <span class="text-white font-medium truncate pr-4">${list.name}</span>
+                    <input type="checkbox" 
+                           class="w-5 h-5 accent-[#FFC107] rounded cursor-pointer" 
+                           ${isChecked}
+                           onchange="toggleProductionInList('${list.id}', '${targetProdId}', this)">
+                </label>
+            `;
+        });
+    } catch (e) {
+        console.error(e);
+        container.innerHTML = '<p class="text-red-500 text-center">Hata oluştu.</p>';
+    }
+}
+function openUserListModal(type) {
+    const modal = document.getElementById('userListModal');
+    const title = document.getElementById('userListModalTitle');
+    const container = document.getElementById('userListModalContainer');
+
+    // Modalı Aç
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+
+    // Yükleniyor mesajı
+    container.innerHTML = '<p class="text-gray-400 text-center py-4">Yükleniyor...</p>';
+
+    const userId = window.currentProfileId || 1;
+
+    if (type === 'followers') {
+        title.textContent = 'Takipçiler';
+        fetchUserList(userId, 'followers', container);
+    } else {
+        title.textContent = 'Takip Edilenler';
+        fetchUserList(userId, 'following', container);
+    }
+}
+async function openAllReviewsModal(userId) {
+    const modal = document.getElementById('allReviewsModal');
+    const container = document.getElementById('all-reviews-container');
+
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+    container.innerHTML = '<p class="text-gray-500 text-center py-10">Yükleniyor...</p>';
+
+    try {
+        const response = await fetch(`/api/user/${userId}/all_reviews`);
+        const reviews = await response.json();
+
+        container.innerHTML = '';
+
+        if (reviews.length === 0) {
+            container.innerHTML = '<p class="text-gray-500 text-center py-10">Hiç aktivite yok.</p>';
+            return;
+        }
+
+        reviews.forEach(act => {
+            const poster = act.poster || IMG_FALLBACK.SMALL_POSTER;
+
+            // Profildeki listenin aynısı, sadece border ayarı biraz farklı
+            container.innerHTML += `
+                <div class="flex gap-4 mb-4 border-b border-[#3A424A] pb-4 last:border-0 hover:bg-[#323b42] p-2 rounded transition">
+                    <img src="${poster}"
+                         onerror="this.onerror=null;this.src='${IMG_FALLBACK.SMALL_POSTER}'"
+                         class="w-16 h-24 object-cover rounded cursor-pointer hover:opacity-80 transition"
+                         onclick="loadProduction('${act.prod_id}'); navigateTo('production'); closeAllReviewsModal()">
+                    
+                    <div class="flex flex-col items-start w-full">
+                        <button onclick="loadProduction('${act.prod_id}'); navigateTo('production'); closeAllReviewsModal()" 
+                                class="text-white font-bold text-lg text-left hover:text-[#FFC107] hover:underline transition">
+                            ${act.title}
+                        </button>
+                        
+                        <div class="text-[#FFC107] text-sm mt-1 mb-2">★ ${act.score}</div>
+                        
+                        ${act.text ? `<div class="bg-[#23292e] p-3 rounded text-gray-300 text-sm font-serif w-full">${act.text}</div>` : ''}
+                    </div>
+                </div>`;
+        });
+
+    } catch (e) {
+        console.error(e);
+        container.innerHTML = '<p class="text-red-500 text-center">Yükleme hatası.</p>';
+    }
+}
+
+
 function closeModal() {
     const modal = document.getElementById('reviewModal');
     if (modal) {
@@ -57,6 +166,23 @@ function closeModal() {
     }
     window.activeProductionId = null;
 }
+function closeListModal() {
+    const modal = document.getElementById('listSelectionModal');
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
+}
+function closeUserListModal() {
+    const modal = document.getElementById('userListModal');
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
+}
+function closeAllReviewsModal() {
+    const modal = document.getElementById('allReviewsModal');
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
+}
+
+
 
 async function saveReview() {
     const ratingContainer = document.getElementById('modal-star-container');
@@ -513,7 +639,6 @@ async function loadProfile(user_id = null) {
             }
         }
 
-
         // Son Aktiviteleri Listele
         const activityContainer = document.getElementById('profile-recent-activity');
         if (data.recent_activity.length === 0) {
@@ -521,11 +646,13 @@ async function loadProfile(user_id = null) {
         } else {
             let html = '';
             data.recent_activity.forEach(act => {
-                const poster = act.poster || 'https://placehold.co/50x75?text=No+Img';
+                const poster = act.poster || IMG_FALLBACK.SMALL_POSTER;
                 html += `
                     <div class="flex gap-3 mb-4 border-b border-[#3A424A] pb-3 last:border-0">
-                        <img src="${poster}" class="w-12 h-16 object-cover rounded cursor-pointer hover:opacity-80 transition"
-                             onclick="loadProduction('${act.prod_id}'); navigateTo('production')">
+                        <img src="${poster}" 
+                            onerror="this.onerror=null;this.src='${IMG_FALLBACK.SMALL_POSTER}'"
+                            class="w-12 h-16 object-cover rounded cursor-pointer hover:opacity-80 transition"
+                            onclick="loadProduction('${act.prod_id}'); navigateTo('production')">
                         <div>
                             <button 
                                 onclick="loadProduction('${act.prod_id}'); navigateTo('production', false)" 
@@ -538,6 +665,20 @@ async function loadProfile(user_id = null) {
                     </div>`;
             });
             activityContainer.innerHTML = html;
+
+            const moreBtnContainer = document.getElementById('profile-activity-more');
+            if (data.recent_activity.length === 5) {
+                moreBtnContainer.classList.remove('hidden');
+                moreBtnContainer.innerHTML = `
+                    <button onclick="openAllReviewsModal('${data.user_id}')" 
+                            class="text-gray-400 hover:text-[#FFC107] text-sm font-semibold transition flex items-center justify-center gap-1 mx-auto hover:underline">
+                        Tüm Aktiviteleri Gör 
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
+                    </button>
+                `;
+            } else {
+                moreBtnContainer.classList.add('hidden');
+            }
         }
 
         // Grafikleri Çiz
@@ -837,44 +978,6 @@ async function loadListDetails(listId) {
     }
 }
 
-async function openListSelectionModal(prodId) {
-    const targetProdId = prodId || window.currentProductionId;
-    window.activeModalProductionId = targetProdId;
-
-    const modal = document.getElementById('listSelectionModal');
-    const container = document.getElementById('list-selection-container');
-
-    modal.classList.remove('hidden');
-    modal.classList.add('flex');
-    container.innerHTML = '<p class="text-gray-400 text-center">Listeler getiriliyor...</p>';
-
-    try {
-        const response = await fetch(`/api/list/${targetProdId}/lists_status`);
-        const lists = await response.json();
-        container.innerHTML = '';
-        if (lists.length === 0) {
-            container.innerHTML = '<p class="text-gray-500 text-center text-sm">Hiç listen yok. Aşağıdan oluşturabilirsin.</p>';
-        }
-
-        lists.forEach(list => {
-            const isChecked = list.has_production ? 'checked' : '';
-
-            container.innerHTML += `
-                <label class="flex items-center justify-between p-3 bg-[#1C2329] rounded-lg hover:bg-[#3A424A] cursor-pointer transition border border-transparent hover:border-gray-600">
-                    <span class="text-white font-medium truncate pr-4">${list.name}</span>
-                    <input type="checkbox" 
-                           class="w-5 h-5 accent-[#FFC107] rounded cursor-pointer" 
-                           ${isChecked}
-                           onchange="toggleProductionInList('${list.id}', '${targetProdId}', this)">
-                </label>
-            `;
-        });
-    } catch (e) {
-        console.error(e);
-        container.innerHTML = '<p class="text-red-500 text-center">Hata oluştu.</p>';
-    }
-}
-
 async function toggleProductionInList(listId, prodId, checkbox) {
     checkbox.disabled = true;
 
@@ -915,12 +1018,6 @@ async function toggleFollow(targetId, action) {
     } catch (e) {
         console.error("Takip hatası: ", e);
     }
-}
-
-function closeListModal() {
-    const modal = document.getElementById('listSelectionModal');
-    modal.classList.add('hidden');
-    modal.classList.remove('flex');
 }
 
 // Modal içinden hızlı liste oluşturma
@@ -1040,37 +1137,6 @@ function openProfileTab(event, tabId) {
         console.log("Takip edilenler çekiliyor...");
         loadFollowing(userId);
     }
-}
-
-// --- KULLANICI LİSTESİ MODALI (Takipçi/Takip Edilen) ---
-
-function openUserListModal(type) {
-    const modal = document.getElementById('userListModal');
-    const title = document.getElementById('userListModalTitle');
-    const container = document.getElementById('userListModalContainer');
-
-    // Modalı Aç
-    modal.classList.remove('hidden');
-    modal.classList.add('flex');
-
-    // Yükleniyor mesajı
-    container.innerHTML = '<p class="text-gray-400 text-center py-4">Yükleniyor...</p>';
-
-    const userId = window.currentProfileId || 1;
-
-    if (type === 'followers') {
-        title.textContent = 'Takipçiler';
-        fetchUserList(userId, 'followers', container);
-    } else {
-        title.textContent = 'Takip Edilenler';
-        fetchUserList(userId, 'following', container);
-    }
-}
-
-function closeUserListModal() {
-    const modal = document.getElementById('userListModal');
-    modal.classList.add('hidden');
-    modal.classList.remove('flex');
 }
 
 async function fetchUserList(userId, type, container) {

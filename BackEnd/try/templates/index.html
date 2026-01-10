@@ -187,13 +187,13 @@
 
     <div class="flex gap-8 bg-[#14181C]/90 px-10 py-5 rounded-full backdrop-blur-md border border-[#333] shadow-2xl">
 
-        <!-- İzlenen Film (Tıklayınca Genel Bakışa döner) -->
+        <!-- İzlenen Film -->
         <div class="text-center cursor-pointer group" onclick="openProfileTab(event, 'tab-stats')">
             <div class="text-3xl font-bold text-white group-hover:text-[#FFC107] transition duration-300" id="stat-watched">0</div>
             <div class="text-xs text-gray-400 uppercase tracking-widest font-semibold group-hover:text-white transition">Film</div>
         </div>
 
-        <!-- Liste Sayısı (Tıklayınca Listelerim sayfasına gider) -->
+        <!-- Liste Sayısı -->
         <div class="text-center cursor-pointer group" onclick="navigateTo('lists')">
             <div class="text-3xl font-bold text-white group-hover:text-[#FFC107] transition duration-300" id="stat-lists">0</div>
             <div class="text-xs text-gray-400 uppercase tracking-widest font-semibold group-hover:text-white transition">Liste</div>
@@ -212,15 +212,14 @@
         </div>
 
         <div id="profile-actions" class="mt-6 flex justify-center items-center gap-4">
-            <!-- Placeholder (JS gelince silinecek, yerini gör diye koydum) -->
-            <!-- <button class="bg-[#FFC107] text-[#14181C] px-6 py-2 rounded-full font-bold">Yükleniyor...</button> -->
+                <!-- JS -->
         </div>
 
         <!-- Takipçiler Listesi -->
         <div id="tab-followers" class="profile-tab-content hidden">
             <h3 class="text-xl font-bold text-white mb-6 border-b border-[#3A424A] pb-2">Takipçiler</h3>
             <div id="followers-grid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-                <!-- JS dolduracak -->
+                <!-- JS -->
             </div>
         </div>
 
@@ -228,7 +227,7 @@
         <div id="tab-following" class="profile-tab-content hidden">
             <h3 class="text-xl font-bold text-white mb-6 border-b border-[#3A424A] pb-2">Takip Edilenler</h3>
             <div id="following-grid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-                <!-- JS dolduracak -->
+                <!-- JS -->
             </div>
         </div>
 
@@ -259,11 +258,16 @@
             <div id="profile-recent-activity" class="space-y-4 max-h-[600px] overflow-y-auto pr-2 custom-scrollbar">
                 <p class="text-gray-500 text-sm text-center py-4">Henüz aktivite yok.</p>
             </div>
+
+            <!-- "Daha Fazla Göster" Buton Alanı -->
+            <div id="profile-activity-more" class="mt-4 text-center hidden">
+                <!-- JS -->
+            </div>
         </div>
     </div>
 </div>
 
-<!-- KULLANICI LİSTESİ MODALI (Takipçi/Takip Edilen) -->
+<!-- Kullanıcı Listesi Modalı (Takipçi/Takip Edilen) -->
 <div class="modal fixed inset-0 bg-black/80 z-[2100] hidden items-center justify-center backdrop-blur-sm transition-opacity" id="userListModal">
     <div class="modal-content bg-[#2C343A] p-6 rounded-2xl max-w-sm w-[90%] shadow-2xl border border-[#3A424A] relative">
         <button onclick="closeUserListModal()" class="absolute top-4 right-4 text-gray-400 hover:text-white text-2xl">&times;</button>
@@ -277,6 +281,7 @@
     </div>
 </div>
 
+<!-- List Select Modalı -->
 <div class="modal fixed inset-0 bg-black/80 z-[2100] hidden items-center justify-center backdrop-blur-sm transition-opacity" id="listSelectionModal">
     <div class="modal-content bg-[#2C343A] p-6 rounded-2xl max-w-sm w-[90%] shadow-2xl border border-[#3A424A] relative">
         <button onclick="closeListModal()" class="absolute top-4 right-4 text-gray-400 hover:text-white text-2xl">&times;</button>
@@ -289,6 +294,21 @@
 
         <div class="mt-4 pt-4 border-t border-[#3A424A] text-center">
             <button onclick="createNewListFromModal()" class="text-[#FFC107] text-sm font-bold hover:underline">+ Yeni Liste Oluştur</button>
+        </div>
+    </div>
+</div>
+
+<!-- Tüm Aktiviteler Modalı -->
+<div class="modal fixed inset-0 bg-black/80 z-[2100] hidden items-center justify-center backdrop-blur-sm transition-opacity" id="allReviewsModal">
+    <div class="modal-content bg-[#2C343A] p-6 rounded-2xl max-w-2xl w-[90%] h-[80vh] shadow-2xl border border-[#3A424A] relative flex flex-col">
+
+        <button onclick="closeAllReviewsModal()" class="absolute top-4 right-4 text-gray-400 hover:text-white text-2xl">&times;</button>
+
+        <h3 class="text-xl font-bold text-white mb-4 border-b border-[#3A424A] pb-2 flex-shrink-0">Tüm Aktiviteler</h3>
+
+        <!-- İçerik Alanı -->
+        <div id="all-reviews-container" class="flex-1 overflow-y-auto custom-scrollbar pr-2">
+            <p class="text-gray-500 text-center py-10">Yükleniyor...</p>
         </div>
     </div>
 </div>

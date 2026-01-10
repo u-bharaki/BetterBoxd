@@ -460,6 +460,7 @@ def create_tables(cursor):
         score REAL NOT NULL,
         production_id TEXT NOT NULL,
         user_id TEXT NOT NULL,
+        added_at TIMESTAMP NOT NULL DEFAULT (datetime('now', '+3 hour')),
         
         CONSTRAINT fk_{REVIEWS_TABLE_NAME}_production_id FOREIGN KEY (production_id) REFERENCES {PRODUCTIONS_TABLE_NAME}(id) ON DELETE CASCADE,
         CONSTRAINT fk_{REVIEWS_TABLE_NAME}_user_id FOREIGN KEY (user_id) REFERENCES {USERS_TABLE_NAME}(id) ON DELETE CASCADE

@@ -321,9 +321,6 @@ def get_profile(user_id=None):
         if check:
             is_following = True
 
-
-
-
     # İstatistikler
     total_watched = db.execute('SELECT COUNT(*) FROM reviews WHERE user_id = ?', (user_id,)).fetchone()[0]
     total_lists = db.execute('SELECT COUNT(*) FROM lists WHERE user_id = ?', (user_id,)).fetchone()[0]
@@ -367,7 +364,7 @@ def get_profile(user_id=None):
         FROM reviews r
         JOIN productions p ON r.production_id = p.id
         WHERE r.user_id = ?
-        ORDER BY r.id DESC LIMIT 5
+        ORDER BY r.added_at DESC LIMIT 5
     ''', (user_id,)).fetchall()
 
     recent_activity = [{'title': r['title'], 'poster': r['poster_link'], 'score': r['score'], 'text': r['context'], 'prod_id': r['production_id']} for r in recent]
@@ -386,6 +383,30 @@ def get_profile(user_id=None):
 @login_required
 def get_current_profile():
     return get_profile(session['user_id'])
+
+
+# app.py
+
+@app.route('/api/user/<string:user_id>/all_reviews')
+@login_required
+def get_user_all_reviews(user_id):
+    db = get_db()
+
+    reviews = db.execute('''
+        SELECT r.score, r.context, p.title, p.poster_link, p.id as prod_id 
+        FROM reviews r
+        JOIN productions p ON r.production_id = p.id
+        WHERE r.user_id = ?
+        ORDER BY r.added_at DESC
+    ''', (user_id,)).fetchall()
+
+    return jsonify([{
+        'prod_id': str(r['prod_id']),
+        'title': r['title'],
+        'poster': r['poster_link'],
+        'score': r['score'],
+        'text': r['context']
+    } for r in reviews])
 
 @app.route('/api/my-lists')
 @login_required
